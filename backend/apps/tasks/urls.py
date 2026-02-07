@@ -1,7 +1,6 @@
-from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from apps.tasks.views import ProjectViewSet, TaskViewSet, TagViewSet
+from .views import ProjectViewSet, TaskViewSet, TagViewSet
 
 router = DefaultRouter()
 router.register(r'projects', ProjectViewSet, basename='project')
@@ -9,7 +8,5 @@ router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'tags', TagViewSet, basename='tag')
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/v1/', include(router.urls)),
-    path('api/v1/auth/', include('apps.core.urls')),
+    path('', include(router.urls)),
 ]

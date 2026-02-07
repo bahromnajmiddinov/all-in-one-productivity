@@ -3,10 +3,9 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
-from pgvector.django import PgvectorAppConfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables
 dotenv.load_dotenv(os.path.join(BASE_DIR.parent, '.env'))
@@ -32,9 +31,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
-    'drf_spectacular',
-    'pgvector',
     'apps.core',
+    'apps.tasks',
 ]
 
 MIDDLEWARE = [
@@ -69,18 +67,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-DATABASE_URL = os.environ.get(
-    'DATABASE_URL',
-    'postgresql://postgres:postgres@db:5432/productivity'
-)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': DATABASE_URL.split('/')[-1] if DATABASE_URL else 'productivity',
-        'USER': DATABASE_URL.split(':')[1].split('@')[0] if DATABASE_URL else 'postgres',
-        'PASSWORD': DATABASE_URL.split(':')[2].split('@')[0] if DATABASE_URL else 'postgres',
-        'HOST': DATABASE_URL.split('@')[1].split(':')[0] if DATABASE_URL else 'db',
-        'PORT': DATABASE_URL.split(':')[-1].split('/')[0] if DATABASE_URL else '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -138,7 +128,6 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # JWT Settings
@@ -154,29 +143,5 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:3000',
-]
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-
-# API Documentation
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'Productivity API',
-    'DESCRIPTION': 'All-in-one Productivity System API',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-}
-
-# Celery Configuration
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-
-# pgvector
-HNSW_INDEX_PARAMETERS = {'m': 16, 'ef_construction': 64}
