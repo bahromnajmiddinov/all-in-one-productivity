@@ -41,7 +41,7 @@ export function MonthView() {
     
     return events.filter(event => 
       event.start_date <= dateStr && 
-      (event.end_date >= dateStr || !event.end_date)
+      (event.end_date == null || event.end_date >= dateStr)
     );
   };
 
@@ -49,19 +49,19 @@ export function MonthView() {
   const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border">
+    <div className="bg-bg-elevated rounded-[var(--radius)] shadow-soft border border-border">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <button
           onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))}
-          className="px-3 py-1 border rounded hover:bg-gray-50"
+          className="px-3 py-1 border border-border rounded-md hover:bg-bg-subtle transition-smooth"
         >
           ← Prev
         </button>
         <h3 className="text-lg font-semibold">{monthName}</h3>
         <button
           onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))}
-          className="px-3 py-1 border rounded hover:bg-gray-50"
+          className="px-3 py-1 border border-border rounded-md hover:bg-bg-subtle transition-smooth"
         >
           Next →
         </button>
@@ -70,7 +70,7 @@ export function MonthView() {
       {/* Days of week */}
       <div className="grid grid-cols-7 border-b">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
+          <div key={day} className="p-2 text-center text-sm font-medium text-fg-muted">
             {day}
           </div>
         ))}
@@ -93,7 +93,7 @@ export function MonthView() {
               key={day} 
               className={`min-h-24 border-r border-b p-1 ${isToday ? 'bg-blue-50' : ''}`}
             >
-              <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-gray-700'}`}>
+              <div className={`text-sm font-medium mb-1 ${isToday ? 'text-foreground font-semibold' : 'text-foreground'}`}>
                 {day}
               </div>
               <div className="space-y-1">
@@ -107,7 +107,7 @@ export function MonthView() {
                   </div>
                 ))}
                 {dayEvents.length > 3 && (
-                  <div className="text-xs text-gray-500 px-1">
+                  <div className="text-xs text-fg-muted px-1">
                     +{dayEvents.length - 3} more
                   </div>
                 )}

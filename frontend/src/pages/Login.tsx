@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -20,35 +22,47 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h2 className="text-2xl font-bold mb-6">Login</h2>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
-        <div className="space-y-4">
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="Email"
-            className="w-full p-2 border rounded"
-            required
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="Password"
-            className="w-full p-2 border rounded"
-            required
-          />
-          <button
-            type="submit"
-            className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Login
-          </button>
-        </div>
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-[400px] rounded-[var(--radius-lg)] border border-border bg-bg-elevated shadow-soft-lg p-8">
+        <h1 className="text-h1 text-center">Sign in</h1>
+        <p className="text-body text-center mt-2">Enter your credentials to continue.</p>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          {error && (
+            <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+              {error}
+            </p>
+          )}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1.5">
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" size="lg">
+            Sign in
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

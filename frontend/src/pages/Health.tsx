@@ -4,8 +4,11 @@ import { WaterTracker } from '../components/health/WaterTracker';
 
 export function Health() {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6">Health Tracking</h2>
+    <div className="p-6 md:p-8 max-w-content mx-auto">
+      <div className="mb-8">
+        <h1 className="text-h1">Health</h1>
+        <p className="text-body mt-1">Water, sleep, and exercise tracking.</p>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <WaterTracker />

@@ -9,6 +9,8 @@ import { Calendar } from './pages/Calendar';
 import { Notes } from './pages/Notes';
 import { NoteDetail } from './pages/NoteDetail';
 import { Health } from './pages/Health';
+import { Habits } from './pages/Habits';
+import { Tasks } from './pages/Tasks';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -30,12 +32,14 @@ function App() {
         >
           <Route index element={<Navigate to="/today" />} />
           <Route path="today" element={<Today />} />
+          <Route path="tasks" element={<Tasks />} />
           <Route path="projects" element={<Projects />} />
           <Route path="pomodoro" element={<Pomodoro />} />
           <Route path="calendar" element={<Calendar />} />
           <Route path="notes" element={<Notes />} />
           <Route path="notes/:id" element={<NoteDetail />} />
           <Route path="health" element={<Health />} />
+          <Route path="habits" element={<Habits />} />
         </Route>
       </Routes>
     </BrowserRouter>

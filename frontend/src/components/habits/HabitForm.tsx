@@ -1,0 +1,103 @@
+import { useState, type FormEvent } from 'react';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import type { Habit } from '../../types/habits';
+
+const WEEKDAYS = [
+  { value: 0, label: 'Mon' },
+  { value: 1, label: 'Tue' },
+  { value: 2, label: 'Wed' },
+  { value: 3, label: 'Thu' },
+  { value: 4, label: 'Fri' },
+  { value: 5, label: 'Sat' },
+  { value: 6, label: 'Sun' },
+];
+
+export function HabitForm({
+  onSave,
+  onCancel,
+  initial,
+}: {
+  onSave: (data: Partial<Habit>) => void;
+  onCancel: () => void;
+  initial?: Habit | null;
+}) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [frequency, setFrequency] = useState<'daily' | 'weekly'>(initial?.frequency ?? 'daily');
+  const [targetWeekdays, setTargetWeekdays] = useState<number[]>(initial?.target_weekdays ?? [0, 1, 2, 3, 4]);
+
+  const toggleWeekday = (d: number) => {
+    setTargetWeekdays((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
+    );
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const data: Partial<Habit> = {
+      name: name.trim(),
+      description: description.trim(),
+      frequency,
+      target_weekdays: frequency === 'weekly' ? targetWeekdays : [],
+    };
+    onSave(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5 p-5 rounded-[var(--radius)] border border-border bg-bg-elevated shadow-soft">
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1.5">Name</label>
+        <Input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Morning run"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1.5">Description (optional)</label>
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          className="flex w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:fg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1.5">Frequency</label>
+        <select
+          value={frequency}
+          onChange={(e) => setFrequency(e.target.value as 'daily' | 'weekly')}
+          className="flex h-10 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+      {frequency === 'weekly' && (
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">Days</label>
+          <div className="flex flex-wrap gap-3">
+            {WEEKDAYS.map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={targetWeekdays.includes(value)}
+                  onChange={() => toggleWeekday(value)}
+                  className="rounded border-border"
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="flex gap-2 pt-1">
+        <Button type="submit">{initial ? 'Update' : 'Create'} habit</Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+      </div>
+    </form>
+  );
+}

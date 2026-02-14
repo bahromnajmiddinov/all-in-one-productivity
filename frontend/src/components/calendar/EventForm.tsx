@@ -35,7 +35,7 @@ export function EventForm({ onSuccess }: { onSuccess: () => void }) {
   const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6B7280'];
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+    <form onSubmit={handleSubmit} className="bg-bg-elevated rounded-[var(--radius)] shadow-soft border border-border p-5 mb-6">
       <h3 className="font-semibold mb-4">Add Event</h3>
       
       <div className="space-y-4">
@@ -44,7 +44,7 @@ export function EventForm({ onSuccess }: { onSuccess: () => void }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Event title..."
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border border-border rounded-md bg-background text-foreground"
           required
         />
         
@@ -52,7 +52,7 @@ export function EventForm({ onSuccess }: { onSuccess: () => void }) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Description (optional)..."
-          className="w-full p-2 border rounded"
+          className="w-full p-2 border border-border rounded-md bg-background text-foreground"
           rows={2}
         />
         
@@ -61,7 +61,7 @@ export function EventForm({ onSuccess }: { onSuccess: () => void }) {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="p-2 border rounded"
+            className="p-2 border border-border rounded-md bg-background"
             required
           />
           
@@ -71,14 +71,14 @@ export function EventForm({ onSuccess }: { onSuccess: () => void }) {
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="p-2 border rounded"
+                className="p-2 border border-border rounded-md bg-background"
               />
               <span className="self-center">to</span>
               <input
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="p-2 border rounded"
+                className="p-2 border border-border rounded-md bg-background"
               />
             </>
           )}
@@ -99,7 +99,7 @@ export function EventForm({ onSuccess }: { onSuccess: () => void }) {
               key={c}
               type="button"
               onClick={() => setColor(c)}
-              className={`w-8 h-8 rounded-full ${color === c ? 'ring-2 ring-offset-2 ring-gray-400' : ''}`}
+              className={`w-8 h-8 rounded-full ${color === c ? 'ring-2 ring-offset-2 ring-ring' : ''}`}
               style={{ backgroundColor: c }}
             />
           ))}
@@ -107,7 +107,7 @@ export function EventForm({ onSuccess }: { onSuccess: () => void }) {
         
         <button
           type="submit"
-          className="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="w-full py-2.5 bg-foreground text-background rounded-md font-medium hover:opacity-90 transition-smooth"
         >
           Add Event
         </button>

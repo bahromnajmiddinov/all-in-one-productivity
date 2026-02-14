@@ -46,7 +46,7 @@ export function NoteEditor({ note, folderId, onSave, onCancel }: Props) {
       const data = {
         title,
         content,
-        folder: selectedFolder || null,
+        folder: selectedFolder || undefined,
         tags: selectedTags,
       };
       

@@ -147,11 +147,13 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
   const getSessionColor = () => {
     switch (sessionType) {
       case 'work':
-        return 'bg-red-500';
+        return 'bg-foreground';
       case 'short_break':
-        return 'bg-green-500';
+        return 'bg-foreground/70';
       case 'long_break':
-        return 'bg-blue-500';
+        return 'bg-foreground/50';
+      default:
+        return 'bg-foreground';
     }
   };
 
@@ -180,26 +182,27 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto">
-      <div className="flex justify-between mb-6 text-sm text-gray-600">
-        <div>Today: {stats.today_count} sessions</div>
-        <div>{stats.today_minutes} min focused</div>
+    <div className="rounded-[var(--radius-lg)] border border-border bg-bg-elevated shadow-soft p-8 max-w-md mx-auto">
+      <div className="flex justify-between mb-6 text-caption text-fg-muted">
+        <span>Today: {stats.today_count} sessions</span>
+        <span>{stats.today_minutes} min focused</span>
       </div>
 
-      <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+      <div className="flex mb-6 bg-bg-subtle rounded-lg p-1">
         {(['work', 'short_break', 'long_break'] as const).map((type) => (
           <button
             key={type}
+            type="button"
             onClick={() => {
               if (!isActive && !currentSession) {
                 setSessionType(type);
                 setTimeLeft(getDurationSeconds(settings, type));
               }
             }}
-            className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`flex-1 py-2.5 rounded-md text-sm font-medium transition-smooth ${
               sessionType === type
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-bg-elevated text-foreground shadow-soft'
+                : 'text-fg-muted hover:text-foreground'
             } ${isActive || currentSession ? 'cursor-not-allowed opacity-50' : ''}`}
           >
             {type === 'work' ? 'Focus' : type === 'short_break' ? 'Short Break' : 'Long Break'}
@@ -209,16 +212,16 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
 
       <div className="text-center mb-8">
         <div
-          className={`text-7xl font-bold font-mono mb-2 ${
-            timeLeft < 60 ? 'text-red-600' : 'text-gray-900'
+          className={`text-7xl font-semibold font-mono tracking-tight mb-2 ${
+            timeLeft < 60 ? 'text-destructive' : 'text-foreground'
           }`}
         >
           {formatTime(timeLeft)}
         </div>
-        <div className="text-gray-500 capitalize">{sessionType.replace('_', ' ')}</div>
+        <div className="text-caption text-fg-muted capitalize">{sessionType.replace('_', ' ')}</div>
       </div>
 
-      <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+      <div className="w-full bg-bg-subtle rounded-full h-2 mb-6 overflow-hidden">
         <div
           className={`h-2 rounded-full transition-all duration-1000 ${getSessionColor()}`}
           style={{
@@ -227,20 +230,23 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
         />
       </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-3">
         <button
+          type="button"
           onClick={toggleTimer}
-          className={`px-8 py-3 rounded-lg font-semibold text-white transition-colors ${
-            isActive ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600'
+          className={`px-8 py-3 rounded-lg font-medium transition-smooth ${
+            isActive
+              ? 'bg-foreground/90 text-background hover:opacity-90'
+              : 'bg-foreground text-background hover:opacity-90'
           }`}
         >
           {isActive ? 'Pause' : currentSession ? 'Resume' : 'Start'}
         </button>
-
         {currentSession && (
           <button
+            type="button"
             onClick={completeSession}
-            className="px-6 py-3 rounded-lg font-semibold text-white bg-blue-500 hover:bg-blue-600"
+            className="px-6 py-3 rounded-lg font-medium border border-border bg-bg-elevated text-foreground hover:bg-bg-subtle transition-smooth"
           >
             Complete
           </button>
@@ -248,16 +254,17 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
       </div>
 
       <button
+        type="button"
         onClick={() => setShowSettings((prev) => !prev)}
-        className="mt-6 text-sm text-gray-500 hover:text-gray-700 underline"
+        className="mt-6 text-sm text-fg-muted hover:text-foreground transition-smooth"
       >
         Settings
       </button>
 
       {showSettings && (
-        <div className="mt-4 border-t pt-4">
+        <div className="mt-6 pt-6 border-t border-border">
           <div className="grid gap-4">
-            <label className="text-sm text-gray-600">
+            <label className="text-sm text-foreground">
               Focus duration (minutes)
               <input
                 type="number"
@@ -266,10 +273,10 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
                 onChange={(event) =>
                   handleSettingsChange('work_duration', Number(event.target.value))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-2"
+                className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
-            <label className="text-sm text-gray-600">
+            <label className="text-sm text-foreground">
               Short break (minutes)
               <input
                 type="number"
@@ -278,10 +285,10 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
                 onChange={(event) =>
                   handleSettingsChange('short_break', Number(event.target.value))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-2"
+                className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
-            <label className="text-sm text-gray-600">
+            <label className="text-sm text-foreground">
               Long break (minutes)
               <input
                 type="number"
@@ -290,39 +297,43 @@ export function PomodoroTimer({ taskId }: PomodoroTimerProps) {
                 onChange={(event) =>
                   handleSettingsChange('long_break', Number(event.target.value))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-2"
+                className="mt-1.5 w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={settingsDraft.auto_start_breaks}
                 onChange={(event) =>
                   handleSettingsChange('auto_start_breaks', event.target.checked)
                 }
+                className="rounded border-border"
               />
               Auto-start breaks
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-600">
+            <label className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={settingsDraft.auto_start_work}
                 onChange={(event) =>
                   handleSettingsChange('auto_start_work', event.target.checked)
                 }
+                className="rounded border-border"
               />
               Auto-start focus sessions
             </label>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2">
               <button
+                type="button"
                 onClick={() => setShowSettings(false)}
-                className="px-4 py-2 rounded-md border text-gray-600"
+                className="px-4 py-2 rounded-md border border-border text-foreground hover:bg-bg-subtle transition-smooth"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={saveSettings}
-                className="px-4 py-2 rounded-md bg-gray-900 text-white"
+                className="px-4 py-2 rounded-md bg-foreground text-background hover:opacity-90 transition-smooth"
               >
                 Save
               </button>

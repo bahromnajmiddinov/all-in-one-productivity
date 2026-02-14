@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { FolderSidebar } from '../components/notes/FolderSidebar';
 import { NoteList } from '../components/notes/NoteList';
 import { NoteEditor } from '../components/notes/NoteEditor';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { Plus } from 'lucide-react';
 
 export function Notes() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -14,29 +17,30 @@ export function Notes() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-60px)]">
+    <div className="flex h-[calc(100vh-var(--header-height))]">
       <FolderSidebar
         selectedFolder={selectedFolder}
         onSelectFolder={setSelectedFolder}
       />
-      
-      <div className="flex-1 p-6 overflow-y-auto">
+
+      <div className="flex-1 p-6 md:p-8 overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Notes</h2>
+          <div>
+            <h1 className="text-h1">Notes</h1>
+            <p className="text-body mt-1">Clean writing with folders and tags.</p>
+          </div>
           <div className="flex gap-2">
-            <input
+            <Input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes..."
-              className="px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-48"
             />
-            <button
-              onClick={() => setShowEditor(!showEditor)}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              {showEditor ? 'Cancel' : '+ New Note'}
-            </button>
+            <Button onClick={() => setShowEditor(!showEditor)} size="md">
+              <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
+              {showEditor ? 'Cancel' : 'New Note'}
+            </Button>
           </div>
         </div>
 

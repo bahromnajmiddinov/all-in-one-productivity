@@ -47,8 +47,6 @@ export function WeekView() {
 
   const getEventsForDayAndHour = (day: Date, hour: number) => {
     const dateStr = day.toISOString().split('T')[0];
-    const hourStr = hour.toString().padStart(2, '0') + ':00';
-    
     return events.filter(event => {
       if (event.start_date !== dateStr) return false;
       if (!event.start_time) return false;
@@ -61,19 +59,19 @@ export function WeekView() {
   const weekRange = `${weekDays[0].toLocaleDateString()} - ${weekDays[6].toLocaleDateString()}`;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border">
+    <div className="bg-bg-elevated rounded-[var(--radius)] shadow-soft border border-border">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <button
           onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))}
-          className="px-3 py-1 border rounded hover:bg-gray-50"
+          className="px-3 py-1 border border-border rounded-md hover:bg-bg-subtle transition-smooth"
         >
           ← Prev
         </button>
         <h3 className="text-lg font-semibold">{weekRange}</h3>
         <button
           onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))}
-          className="px-3 py-1 border rounded hover:bg-gray-50"
+          className="px-3 py-1 border border-border rounded-md hover:bg-bg-subtle transition-smooth"
         >
           Next →
         </button>
@@ -84,7 +82,7 @@ export function WeekView() {
         <div className="min-w-800">
           {/* Days header */}
           <div className="grid grid-cols-8 border-b">
-            <div className="p-2 text-center text-sm text-gray-500">Time</div>
+            <div className="p-2 text-center text-sm text-fg-muted">Time</div>
             {weekDays.map((day, i) => (
               <div 
                 key={i} 
@@ -101,7 +99,7 @@ export function WeekView() {
           <div className="max-h-96 overflow-y-auto">
             {HOURS.map(hour => (
               <div key={hour} className="grid grid-cols-8 border-b min-h-16">
-                <div className="p-2 text-xs text-gray-500 border-r">
+                <div className="p-2 text-xs text-fg-muted border-r">
                   {hour.toString().padStart(2, '0')}:00
                 </div>
                 {weekDays.map((day, dayIndex) => {

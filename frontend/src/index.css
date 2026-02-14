@@ -2,58 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Design system: Modern, minimal, premium. 8px grid. Dark primary.
+   Inspiration: Linear, Notion, Superhuman, Apple.
+--------------------------------------------------------------------------- */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Light mode (secondary) */
+    --bg: 0 0% 100%;
+    --bg-elevated: 0 0% 98%;
+    --bg-subtle: 0 0% 96%;
+    --fg: 0 0% 9%;
+    --fg-muted: 0 0% 45%;
+    --fg-subtle: 0 0% 63%;
+    --border: 0 0% 90%;
+    --border-subtle: 0 0% 95%;
+    --ring: 0 0% 9%;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+    --sidebar-width: 240px;
+    --sidebar-collapsed: 64px;
+    --header-height: 56px;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Dark mode (primary) */
+    --bg: 0 0% 7%;
+    --bg-elevated: 0 0% 10%;
+    --bg-subtle: 0 0% 12%;
+    --fg: 0 0% 98%;
+    --fg-muted: 0 0% 65%;
+    --fg-subtle: 0 0% 50%;
+    --border: 0 0% 18%;
+    --border-subtle: 0 0% 14%;
+    --ring: 0 0% 83%;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.25), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.25), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.2);
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-[hsl(var(--border))];
   }
+
+  html {
+    @apply antialiased;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[hsl(var(--bg))] text-[hsl(var(--fg))];
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Typography hierarchy */
+  h1, .text-h1 {
+    @apply text-2xl font-semibold tracking-tight text-[hsl(var(--fg))];
+    letter-spacing: -0.02em;
+  }
+
+  h2, .text-h2 {
+    @apply text-xl font-semibold tracking-tight text-[hsl(var(--fg))];
+    letter-spacing: -0.01em;
+  }
+
+  h3, .text-h3 {
+    @apply text-base font-medium text-[hsl(var(--fg))];
+  }
+
+  .text-body {
+    @apply text-sm text-[hsl(var(--fg-muted))];
+  }
+
+  .text-caption {
+    @apply text-xs text-[hsl(var(--fg-subtle))];
+  }
+}
+
+/* 8px grid spacing utilities */
+@layer utilities {
+  .space-grid-1 { gap: 8px; }
+  .space-grid-2 { gap: 16px; }
+  .space-grid-3 { gap: 24px; }
+  .space-grid-4 { gap: 32px; }
+  .space-grid-5 { gap: 40px; }
+  .space-grid-6 { gap: 48px; }
+}
+
+/* Micro-interactions */
+@layer utilities {
+  .transition-smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+  .transition-smooth-fast {
+    @apply transition-all duration-150 ease-out;
+  }
+}
+
+/* Focus ring for accessibility */
+@layer base {
+  *:focus-visible {
+    @apply outline-none ring-2 ring-[hsl(var(--ring))] ring-offset-2 ring-offset-[hsl(var(--bg))];
   }
 }

@@ -28,21 +28,21 @@ export function FolderSidebar({ selectedFolder, onSelectFolder }: Props) {
 
   if (loading) {
     return (
-      <div className="w-64 bg-gray-50 border-r p-4 overflow-y-auto">
+      <div className="w-64 bg-bg-subtle border-r border-border p-4 overflow-y-auto">
         <h3 className="font-semibold mb-4">Folders</h3>
-        <div className="text-sm text-gray-500">Loading...</div>
+        <div className="text-sm text-fg-muted">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="w-64 bg-gray-50 border-r p-4 overflow-y-auto">
+    <div className="w-64 bg-bg-subtle border-r border-border p-4 overflow-y-auto">
       <h3 className="font-semibold mb-4">Folders</h3>
       
       <button
         onClick={() => onSelectFolder(null)}
         className={`w-full text-left px-3 py-2 rounded mb-1 ${
-          selectedFolder === null ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
+          selectedFolder === null ? 'bg-bg-elevated text-foreground' : 'hover:bg-bg-elevated text-fg-muted'
         }`}
       >
         📄 All Notes
@@ -53,13 +53,13 @@ export function FolderSidebar({ selectedFolder, onSelectFolder }: Props) {
           key={folder.id}
           onClick={() => onSelectFolder(folder.id)}
           className={`w-full text-left px-3 py-2 rounded mb-1 flex items-center justify-between ${
-            selectedFolder === folder.id ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-200'
+            selectedFolder === folder.id ? 'bg-bg-elevated text-foreground' : 'hover:bg-bg-elevated text-fg-muted'
           }`}
         >
           <span>
             <span style={{ color: folder.color }}>📁</span> {folder.name}
           </span>
-          <span className="text-xs text-gray-400">{folder.note_count}</span>
+          <span className="text-xs text-fg-subtle">{folder.note_count}</span>
         </button>
       ))}
     </div>

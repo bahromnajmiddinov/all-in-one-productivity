@@ -1,6 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { taskApi } from '../api';
 import { TaskItem } from './TaskItem';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
+import { EmptyState } from './ui/EmptyState';
+import { Plus } from 'lucide-react';
 import type { Task } from '../types';
 
 export function TaskList() {
@@ -25,9 +29,7 @@ export function TaskList() {
 
   const handleAddTask = async (event: FormEvent) => {
     event.preventDefault();
-    if (!newTask.trim()) {
-      return;
-    }
+    if (!newTask.trim()) return;
     try {
       await taskApi.createTask({ title: newTask, status: 'active' });
       setNewTask('');
@@ -47,31 +49,43 @@ export function TaskList() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="rounded-[var(--radius)] border border-border bg-bg-elevated p-8">
+        <p className="text-body text-fg-muted">Loading...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleAddTask} className="flex gap-2">
-        <input
+    <div className="rounded-[var(--radius)] border border-border bg-bg-elevated shadow-soft overflow-hidden">
+      <form onSubmit={handleAddTask} className="flex gap-2 p-4 border-b border-border">
+        <Input
           type="text"
           value={newTask}
-          onChange={(event) => setNewTask(event.target.value)}
+          onChange={(e) => setNewTask(e.target.value)}
           placeholder="Add a task..."
-          className="flex-1 p-2 border rounded"
+          className="flex-1"
         />
-        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
+        <Button type="submit" size="md">
+          <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
           Add
-        </button>
+        </Button>
       </form>
 
-      <div className="space-y-2">
+      <div className="p-2">
         {tasks.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No tasks for today</p>
+          <EmptyState
+            title="No tasks for today"
+            description="Add a task above or pick one from Projects."
+          />
         ) : (
-          tasks.map((task) => (
-            <TaskItem key={task.id} task={task} onComplete={handleComplete} />
-          ))
+          <ul className="space-y-0.5">
+            {tasks.map((task) => (
+              <li key={task.id}>
+                <TaskItem task={task} onComplete={handleComplete} />
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>

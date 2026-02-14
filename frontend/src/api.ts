@@ -8,6 +8,7 @@ import type {
   ExerciseLog,
   BodyMetrics,
 } from './types/health';
+import type { Habit } from './types/habits';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api/v1',
@@ -29,9 +30,21 @@ export const authApi = {
 
 export const taskApi = {
   getToday: () => api.get('/tasks/today/'),
-  getTasks: () => api.get('/tasks/'),
+  getOverdue: () => api.get('/tasks/overdue/'),
+  getUpcoming: () => api.get('/tasks/upcoming/'),
+  getTasks: (params?: Record<string, string | number>) => api.get('/tasks/', { params }),
+  getTask: (id: string) => api.get(`/tasks/${id}/`),
   createTask: (data: unknown) => api.post('/tasks/', data),
+  updateTask: (id: string, data: unknown) => api.patch(`/tasks/${id}/`, data),
   completeTask: (id: string) => api.post(`/tasks/${id}/complete/`),
+  getEisenhower: () => api.get('/tasks/eisenhower/'),
+  getAnalytics: (days?: number) => api.get('/tasks/analytics/', { params: days != null ? { days } : {} }),
+  getDistribution: () => api.get('/tasks/distribution/'),
+  getHeatmap: (days?: number) => api.get('/tasks/heatmap/', { params: days != null ? { days } : {} }),
+  getTimeLogged: (id: string) => api.get(`/tasks/${id}/time_logged/`),
+  skipRecurrence: (id: string) => api.post(`/tasks/${id}/skip_recurrence/`),
+  rescheduleRecurrence: (id: string, due_date: string) =>
+    api.post(`/tasks/${id}/reschedule_recurrence/`, { due_date }),
 };
 
 export const projectApi = {
@@ -97,6 +110,28 @@ export const notesApi = {
   updateChecklistItem: (id: string, data: Partial<NoteChecklistItem>) => 
     api.put(`/notes/checklist-items/${id}/`, data),
   deleteChecklistItem: (id: string) => api.delete(`/notes/checklist-items/${id}/`),
+};
+
+export const habitApi = {
+  getHabits: () => api.get<Habit[]>('/habits/'),
+  getHabit: (id: string) => api.get<Habit>(`/habits/${id}/`),
+  createHabit: (data: Partial<Habit>) => api.post('/habits/', data),
+  updateHabit: (id: string, data: Partial<Habit>) => api.put(`/habits/${id}/`, data),
+  deleteHabit: (id: string) => api.delete(`/habits/${id}/`),
+  getToday: () => api.get('/habits/today/'),
+  getDashboard: () => api.get('/habits/dashboard/'),
+  getCalendar: (year: number, month: number) =>
+    api.get('/habits/calendar/', { params: { year, month } }),
+  toggle: (id: string, date?: string) =>
+    api.post(`/habits/${id}/toggle/`, date ? { date } : {}),
+  complete: (id: string, date?: string) =>
+    api.post(`/habits/${id}/complete/`, date ? { date } : {}),
+  // Reminders and stacks
+  getReminders: () => api.get('/reminders/'),
+  createReminder: (data: any) => api.post('/reminders/', data),
+  updateReminder: (id: string, data: any) => api.put(`/reminders/${id}/`, data),
+  deleteReminder: (id: string) => api.delete(`/reminders/${id}/`),
+  suggestReminderTime: (id: string) => api.get(`/reminders/${id}/suggest_time/`),
 };
 
 export const healthApi = {
