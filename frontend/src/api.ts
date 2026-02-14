@@ -53,13 +53,57 @@ export const projectApi = {
 };
 
 export const pomodoroApi = {
+  // Settings
   getSettings: () => api.get('/pomodoro/settings/'),
   updateSettings: (data: unknown) => api.put('/pomodoro/settings/', data),
-  getSessions: () => api.get('/pomodoro/sessions/'),
+  
+  // Sessions
+  getSessions: (params?: { 
+    start_date?: string; 
+    end_date?: string; 
+    session_type?: string;
+    task?: string;
+    project?: string;
+    completed?: boolean;
+  }) => api.get('/pomodoro/sessions/', { params }),
   createSession: (data: unknown) => api.post('/pomodoro/sessions/', data),
+  updateSession: (id: string, data: unknown) => api.patch(`/pomodoro/sessions/${id}/`, data),
   completeSession: (id: string) => api.post(`/pomodoro/sessions/${id}/complete/`),
+  interruptSession: (id: string, data: { distraction_type: string; description?: string }) => 
+    api.post(`/pomodoro/sessions/${id}/interrupt/`, data),
+  resumeSession: (id: string, data?: { recovery_time_seconds?: number }) => 
+    api.post(`/pomodoro/sessions/${id}/resume/`, data),
   getTodaySessions: () => api.get('/pomodoro/sessions/today/'),
+  getSessionHistory: (params?: Record<string, string | boolean>) => 
+    api.get('/pomodoro/sessions/history/', { params }),
+  
+  // Stats & Analytics
   getStats: () => api.get('/pomodoro/sessions/stats/'),
+  getTimeOfDayAnalytics: (days?: number) => 
+    api.get('/pomodoro/sessions/time_of_day/', { params: days ? { days } : {} }),
+  getDailyAnalytics: (days?: number) => 
+    api.get('/pomodoro/sessions/daily_analytics/', { params: days ? { days } : {} }),
+  getProjectAnalytics: (days?: number) => 
+    api.get('/pomodoro/sessions/project_analytics/', { params: days ? { days } : {} }),
+  getProductivityScore: (period?: 'week' | 'month') => 
+    api.get('/pomodoro/sessions/productivity_score/', { params: period ? { period } : {} }),
+  
+  // Distractions
+  getDistractions: () => api.get('/pomodoro/distractions/'),
+  logDistraction: (data: unknown) => api.post('/pomodoro/distractions/', data),
+  getDistractionSummary: () => api.get('/pomodoro/distractions/summary/'),
+  
+  // Focus Streaks
+  getFocusStreak: () => api.get('/pomodoro/streak/'),
+  
+  // Deep Work Sessions
+  getDeepWorkSessions: () => api.get('/pomodoro/deep-work/'),
+  createDeepWorkSession: (data: unknown) => api.post('/pomodoro/deep-work/', data),
+  completeDeepWorkSession: (id: string, data?: { productivity_score?: number; notes?: string }) => 
+    api.post(`/pomodoro/deep-work/${id}/complete/`, data),
+  addPomodoroToDeepWork: (id: string, pomodoroId: string) => 
+    api.post(`/pomodoro/deep-work/${id}/add_pomodoro/`, { pomodoro_id: pomodoroId }),
+  getDeepWorkStats: () => api.get('/pomodoro/deep-work/stats/'),
 };
 
 export const calendarApi = {
