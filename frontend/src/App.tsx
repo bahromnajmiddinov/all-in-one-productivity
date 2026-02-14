@@ -1,48 +1,32 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useEffect } from 'react';
-import { useAuthStore } from './stores/authStore';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
-import { Register } from './pages/Register';
-import { Dashboard } from './pages/Dashboard';
-import { Profile } from './pages/Profile';
+import { Today } from './pages/Today';
+import { Projects } from './pages/Projects';
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const token = localStorage.getItem('token');
+  return token ? <>{children}</> : <Navigate to="/login" />;
+}
 
 function App() {
-  const { init } = useAuthStore();
-
-  useEffect(() => {
-    init();
-  }, [init]);
-
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Layout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="/today" />} />
+          <Route path="today" element={<Today />} />
+          <Route path="projects" element={<Projects />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
