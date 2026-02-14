@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'django_filters',
     'apps.core',
     'apps.tasks',
+    'apps.pomodoro',
 ]
 
 MIDDLEWARE = [
