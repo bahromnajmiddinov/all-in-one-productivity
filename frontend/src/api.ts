@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { Habit } from './types/habit';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api/v1',
@@ -38,4 +39,17 @@ export const pomodoroApi = {
   completeSession: (id: string) => api.post(`/pomodoro/sessions/${id}/complete/`),
   getTodaySessions: () => api.get('/pomodoro/sessions/today/'),
   getStats: () => api.get('/pomodoro/sessions/stats/'),
+};
+
+export const habitApi = {
+  getHabits: () => api.get('/habits/'),
+  createHabit: (data: Partial<Habit>) => api.post('/habits/', data),
+  updateHabit: (id: string, data: Partial<Habit>) => api.put(`/habits/${id}/`, data),
+  deleteHabit: (id: string) => api.delete(`/habits/${id}/`),
+  completeHabit: (id: string, date?: string) =>
+    api.post(`/habits/${id}/complete/`, { date }),
+  uncompleteHabit: (id: string, date?: string) =>
+    api.post(`/habits/${id}/uncomplete/`, { date }),
+  getCompletions: (id: string, year?: number, month?: number) =>
+    api.get(`/habits/${id}/completions/`, { params: { year, month } }),
 };
