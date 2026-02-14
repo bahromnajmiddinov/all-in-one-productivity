@@ -19,6 +19,9 @@ export function Layout() {
             <Link to="/calendar" className="text-gray-600 hover:text-gray-900">
               Calendar
             </Link>
+            <Link to="/notes" className="text-gray-600 hover:text-gray-900">
+              Notes
+            </Link>
             <button
               onClick={() => {
                 localStorage.removeItem('token');
@@ -31,7 +34,7 @@ export function Layout() {
           </div>
         </div>
       </nav>
-      <main className="max-w-4xl mx-auto p-4">
+      <main>
         <Outlet />
       </main>
     </div>
