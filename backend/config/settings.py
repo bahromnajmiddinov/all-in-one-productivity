@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'apps.pomodoro',
     'apps.calendar',
     'apps.notes',
+    'apps.health',
 ]
 
 MIDDLEWARE = [
