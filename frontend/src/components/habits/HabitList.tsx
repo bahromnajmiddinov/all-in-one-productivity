@@ -18,7 +18,7 @@ export function HabitList({ refreshKey }: Props) {
   const loadHabits = async () => {
     try {
       const response = await habitApi.getHabits();
-      setHabits(response.data);
+      setHabits(response.data.results || response.data);
     } catch (error) {
       console.error('Failed to load habits');
     } finally {

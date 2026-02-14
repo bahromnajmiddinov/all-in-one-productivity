@@ -3,9 +3,10 @@ import { habitApi } from '../../api';
 
 interface Props {
   habitId: string;
+  color?: string;
 }
 
-export function MonthlyHeatmap({ habitId }: Props) {
+export function MonthlyHeatmap({ habitId, color = '#10B981' }: Props) {
   const [completions, setCompletions] = useState<string[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -89,10 +90,9 @@ export function MonthlyHeatmap({ habitId }: Props) {
             <div
               key={day}
               className={`aspect-square rounded-md flex items-center justify-center text-sm ${
-                completed
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 text-gray-400'
+                completed ? 'text-white' : 'bg-gray-100 text-gray-400'
               }`}
+              style={completed ? { backgroundColor: color } : undefined}
             >
               {day}
             </div>
