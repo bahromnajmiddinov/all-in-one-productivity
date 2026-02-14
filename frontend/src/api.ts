@@ -1,6 +1,13 @@
 import axios from 'axios';
 import type { CalendarEvent } from './types/calendar';
 import type { Note, NoteFolder, NoteTag, NoteChecklistItem } from './types/notes';
+import type {
+  WaterSettings,
+  SleepLog,
+  ExerciseType,
+  ExerciseLog,
+  BodyMetrics,
+} from './types/health';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api/v1',
@@ -90,6 +97,32 @@ export const notesApi = {
   updateChecklistItem: (id: string, data: Partial<NoteChecklistItem>) => 
     api.put(`/notes/checklist-items/${id}/`, data),
   deleteChecklistItem: (id: string) => api.delete(`/notes/checklist-items/${id}/`),
+};
+
+export const healthApi = {
+  // Water
+  getWaterSettings: () => api.get('/health/water/settings/'),
+  updateWaterSettings: (data: Partial<WaterSettings>) => api.put('/health/water/settings/', data),
+  getWaterLogs: () => api.get('/health/water/logs/'),
+  addWaterLog: (amount_ml: number) => api.post('/health/water/logs/', { amount_ml }),
+  getWaterToday: () => api.get('/health/water/logs/today/'),
+  getWaterStats: () => api.get('/health/water/logs/stats/'),
+
+  // Sleep
+  getSleepLogs: () => api.get('/health/sleep/'),
+  createSleepLog: (data: Partial<SleepLog>) => api.post('/health/sleep/', data),
+  getSleepStats: () => api.get('/health/sleep/stats/'),
+
+  // Exercise
+  getExerciseTypes: () => api.get('/health/exercise/types/'),
+  createExerciseType: (data: Partial<ExerciseType>) => api.post('/health/exercise/types/', data),
+  getExerciseLogs: () => api.get('/health/exercise/logs/'),
+  createExerciseLog: (data: Partial<ExerciseLog>) => api.post('/health/exercise/logs/', data),
+  getExerciseStats: () => api.get('/health/exercise/logs/stats/'),
+
+  // Body Metrics
+  getBodyMetrics: () => api.get('/health/body-metrics/'),
+  createBodyMetric: (data: Partial<BodyMetrics>) => api.post('/health/body-metrics/', data),
 };
 
 export default api;

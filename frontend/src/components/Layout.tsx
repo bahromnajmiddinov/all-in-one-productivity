@@ -22,6 +22,9 @@ export function Layout() {
             <Link to="/notes" className="text-gray-600 hover:text-gray-900">
               Notes
             </Link>
+            <Link to="/health" className="text-gray-600 hover:text-gray-900">
+              Health
+            </Link>
             <button
               onClick={() => {
                 localStorage.removeItem('token');
