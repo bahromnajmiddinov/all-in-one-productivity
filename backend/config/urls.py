@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from apps.pomodoro.views import PomodoroSettingsViewSet, PomodoroSessionViewSet
+from apps.pomodoro.views import PomodoroSettingsViewSet
 from apps.tasks.views import ProjectViewSet, TaskViewSet, TagViewSet
 from apps.calendar.views import CalendarEventViewSet, CalendarPreferenceViewSet
 from apps.health.views import (
@@ -17,8 +17,6 @@ router = DefaultRouter()
 router.register(r'projects', ProjectViewSet, basename='project')
 router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'tags', TagViewSet, basename='tag')
-router.register(r'pomodoro/settings', PomodoroSettingsViewSet, basename='pomodoro-settings')
-router.register(r'pomodoro/sessions', PomodoroSessionViewSet, basename='pomodoro-session')
 router.register(r'calendar/events', CalendarEventViewSet, basename='calendar-event')
 router.register(r'calendar/preferences', CalendarPreferenceViewSet, basename='calendar-preference')
 router.register(r'health/water/settings', WaterIntakeSettingsViewSet, basename='water-settings')
@@ -42,4 +40,5 @@ urlpatterns = [
     path('api/v1/auth/', include('apps.core.urls')),
     path('api/v1/notes/', include('apps.notes.urls')),
     path('api/v1/', include('apps.habits.urls')),
+    path('api/v1/pomodoro/', include('apps.pomodoro.urls')),
 ]
