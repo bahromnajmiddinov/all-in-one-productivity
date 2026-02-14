@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from celery.schedules import crontab
 from pathlib import Path
 
 import dotenv
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     'apps.calendar',
     'apps.notes',
     'apps.health',
+    'apps.habits',
 ]
 
 MIDDLEWARE = [
@@ -80,6 +82,18 @@ DATABASES = {
 
 # Redis
 REDIS_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+
+# Celery configuration
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', REDIS_URL)
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', REDIS_URL)
+
+# Example beat schedule: run smart reminders daily at 07:00 UTC (adjust to your TZ)
+CELERY_BEAT_SCHEDULE = {
+    'habits.smart_reminders_daily': {
+        'task': 'apps.habits.tasks.dispatch_smart_reminders',
+        'schedule': crontab(hour=7, minute=0),
+    },
+}
 
 CACHES = {
     'default': {
@@ -149,3 +163,10 @@ SIMPLE_JWT = {
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+# Notification backend configuration (fill with real providers in production)
+NOTIFICATIONS = {
+    'EMAIL_ENABLED': os.environ.get('NOTIF_EMAIL', 'False').lower() == 'true',
+    'PUSH_ENABLED': os.environ.get('NOTIF_PUSH', 'False').lower() == 'true',
+    'DEFAULT_TIMEZONE': TIME_ZONE,
+}

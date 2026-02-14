@@ -41,4 +41,5 @@ urlpatterns = [
     path('api/v1/', include(router.urls)),
     path('api/v1/auth/', include('apps.core.urls')),
     path('api/v1/notes/', include('apps.notes.urls')),
+    path('api/v1/', include('apps.habits.urls')),
 ]
