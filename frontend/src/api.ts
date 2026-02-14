@@ -29,3 +29,13 @@ export const projectApi = {
   getProjects: () => api.get('/projects/'),
   createProject: (data: unknown) => api.post('/projects/', data),
 };
+
+export const pomodoroApi = {
+  getSettings: () => api.get('/pomodoro/settings/'),
+  updateSettings: (data: unknown) => api.put('/pomodoro/settings/', data),
+  getSessions: () => api.get('/pomodoro/sessions/'),
+  createSession: (data: unknown) => api.post('/pomodoro/sessions/', data),
+  completeSession: (id: string) => api.post(`/pomodoro/sessions/${id}/complete/`),
+  getTodaySessions: () => api.get('/pomodoro/sessions/today/'),
+  getStats: () => api.get('/pomodoro/sessions/stats/'),
+};

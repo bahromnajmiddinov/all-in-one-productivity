@@ -13,6 +13,9 @@ export function Layout() {
             <Link to="/projects" className="text-gray-600 hover:text-gray-900">
               Projects
             </Link>
+            <Link to="/pomodoro" className="text-gray-600 hover:text-gray-900">
+              Pomodoro
+            </Link>
             <button
               onClick={() => {
                 localStorage.removeItem('token');

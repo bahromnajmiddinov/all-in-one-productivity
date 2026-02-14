@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Today } from './pages/Today';
 import { Projects } from './pages/Projects';
+import { Pomodoro } from './pages/Pomodoro';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -26,6 +27,7 @@ function App() {
           <Route index element={<Navigate to="/today" />} />
           <Route path="today" element={<Today />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="pomodoro" element={<Pomodoro />} />
         </Route>
       </Routes>
     </BrowserRouter>
