@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { CalendarEvent } from './types/calendar';
+import type { Note, NoteFolder, NoteTag, NoteChecklistItem } from './types/notes';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api/v1',
@@ -53,3 +54,42 @@ export const calendarApi = {
   getPreferences: () => api.get('/calendar/preferences/'),
   updatePreferences: (data: any) => api.put('/calendar/preferences/', data),
 };
+
+export const notesApi = {
+  // Folders
+  getFolders: () => api.get('/notes/folders/'),
+  getFolderTree: () => api.get('/notes/folders/tree/'),
+  createFolder: (data: Partial<NoteFolder>) => api.post('/notes/folders/', data),
+  updateFolder: (id: string, data: Partial<NoteFolder>) => api.put(`/notes/folders/${id}/`, data),
+  deleteFolder: (id: string) => api.delete(`/notes/folders/${id}/`),
+  
+  // Tags
+  getTags: () => api.get('/notes/tags/'),
+  createTag: (data: Partial<NoteTag>) => api.post('/notes/tags/', data),
+  updateTag: (id: string, data: Partial<NoteTag>) => api.put(`/notes/tags/${id}/`, data),
+  deleteTag: (id: string) => api.delete(`/notes/tags/${id}/`),
+  
+  // Notes
+  getNotes: (params?: { folder?: string; tag?: string; favorites?: boolean; search?: string }) => 
+    api.get('/notes/', { params }),
+  getNote: (id: string) => api.get(`/notes/${id}/`),
+  createNote: (data: Partial<Note>) => api.post('/notes/', data),
+  updateNote: (id: string, data: Partial<Note>) => api.put(`/notes/${id}/`, data),
+  deleteNote: (id: string) => api.delete(`/notes/${id}/`),
+  
+  // Note actions
+  pinNote: (id: string) => api.post(`/notes/${id}/pin/`),
+  favoriteNote: (id: string) => api.post(`/notes/${id}/favorite/`),
+  archiveNote: (id: string) => api.post(`/notes/${id}/archive/`),
+  restoreNote: (id: string) => api.post(`/notes/${id}/restore/`),
+  getArchivedNotes: () => api.get('/notes/archived/'),
+  
+  // Checklist
+  addChecklistItem: (noteId: string, content: string) => 
+    api.post('/notes/checklist-items/', { note: noteId, content }),
+  updateChecklistItem: (id: string, data: Partial<NoteChecklistItem>) => 
+    api.put(`/notes/checklist-items/${id}/`, data),
+  deleteChecklistItem: (id: string) => api.delete(`/notes/checklist-items/${id}/`),
+};
+
+export default api;

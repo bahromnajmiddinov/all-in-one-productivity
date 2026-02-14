@@ -6,6 +6,8 @@ import { Today } from './pages/Today';
 import { Projects } from './pages/Projects';
 import { Pomodoro } from './pages/Pomodoro';
 import { Calendar } from './pages/Calendar';
+import { Notes } from './pages/Notes';
+import { NoteDetail } from './pages/NoteDetail';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -30,6 +32,8 @@ function App() {
           <Route path="projects" element={<Projects />} />
           <Route path="pomodoro" element={<Pomodoro />} />
           <Route path="calendar" element={<Calendar />} />
+          <Route path="notes" element={<Notes />} />
+          <Route path="notes/:id" element={<NoteDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>
