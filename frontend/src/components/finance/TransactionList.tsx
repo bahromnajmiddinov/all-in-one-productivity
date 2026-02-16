@@ -1,19 +1,51 @@
 import { useEffect, useState } from 'react';
+import { ArrowUpRight, ArrowDownRight, ArrowLeftRight, Trash2, Wallet } from 'lucide-react';
 import { financeApi } from '../../api';
+import { EmptyState } from '../ui/EmptyState';
+
+type TransactionType = 'expense' | 'income' | 'transfer';
 
 type Transaction = {
   id: string;
   amount: string;
   currency: string;
-  type: string;
+  type: TransactionType;
   memo?: string;
   date: string;
   account: { id: string; name: string } | string;
   category?: { id: string; name: string } | string | null;
+  to_account?: { id: string; name: string } | string | null;
 };
 
-export function TransactionList() {
+interface TransactionListProps {
+  limit?: number;
+  onUpdate?: () => void;
+}
+
+const typeConfig = {
+  expense: {
+    icon: ArrowDownRight,
+    color: 'text-red-600',
+    bgColor: 'bg-red-500/10',
+    prefix: '-',
+  },
+  income: {
+    icon: ArrowUpRight,
+    color: 'text-green-600',
+    bgColor: 'bg-green-500/10',
+    prefix: '+',
+  },
+  transfer: {
+    icon: ArrowLeftRight,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-500/10',
+    prefix: '±',
+  },
+};
+
+export function TransactionList({ limit, onUpdate }: TransactionListProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     load();
@@ -21,8 +53,22 @@ export function TransactionList() {
 
   const load = async () => {
     try {
-      const res = await financeApi.getTransactions({ page_size: 20 });
+      setLoading(true);
+      const res = await financeApi.getTransactions({ page_size: limit || 50 });
       setTransactions(res.data.results || res.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this transaction?')) return;
+    try {
+      await financeApi.deleteTransaction(id);
+      load();
+      onUpdate?.();
     } catch (e) {
       console.error(e);
     }
@@ -39,23 +85,113 @@ export function TransactionList() {
     return category?.name || null;
   };
 
-  return (
-    <div className="space-y-3">
-      {transactions.length === 0 ? (
-        <div className="text-sm text-muted-foreground">No transactions yet.</div>
-      ) : (
-        <div className="space-y-2">
-          {transactions.map((t) => (
-            <div key={t.id} className="p-3 rounded border bg-bg-elevated flex justify-between">
-              <div>
-                <div className="text-sm font-medium">{getAccountName(t.account)} • {getCategoryName(t.category) || t.type}</div>
-                <div className="text-xs text-muted-foreground">{t.memo || 'No memo'}</div>
-              </div>
-              <div className="text-sm">{t.amount} {t.currency}</div>
+  const formatAmount = (amount: string, type: TransactionType) => {
+    const config = typeConfig[type];
+    const num = Number(amount);
+    return `${config.prefix}${new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+    }).format(num)}`;
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center gap-4 p-3 animate-pulse">
+            <div className="w-10 h-10 rounded-full bg-bg-subtle" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-1/3 bg-bg-subtle rounded" />
+              <div className="h-3 w-1/4 bg-bg-subtle rounded" />
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (transactions.length === 0) {
+    return (
+      <EmptyState
+        icon={<Wallet className="w-8 h-8" />}
+        title="No transactions yet"
+        description="Add your first transaction to start tracking your finances."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {transactions.map((t) => {
+        const config = typeConfig[t.type];
+        const Icon = config.icon;
+        const categoryName = getCategoryName(t.category);
+
+        return (
+          <div
+            key={t.id}
+            className="group flex items-center gap-4 p-3 rounded-lg hover:bg-bg-subtle transition-colors"
+          >
+            {/* Type Icon */}
+            <div className={`flex-shrink-0 w-10 h-10 rounded-full ${config.bgColor} flex items-center justify-center`}>
+              <Icon className={`w-5 h-5 ${config.color}`} />
+            </div>
+
+            {/* Transaction Details */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm truncate">
+                  {t.memo || categoryName || t.type.charAt(0).toUpperCase() + t.type.slice(1)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-fg-muted mt-0.5">
+                <span>{getAccountName(t.account)}</span>
+                {categoryName && (
+                  <>
+                    <span>•</span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-bg-subtle">{categoryName}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Date */}
+            <div className="hidden sm:block text-xs text-fg-muted">
+              {formatDate(t.date)}
+            </div>
+
+            {/* Amount */}
+            <div className={`text-sm font-semibold ${config.color}`}>
+              {formatAmount(t.amount, t.type)}
+            </div>
+
+            {/* Actions */}
+            <button
+              onClick={() => handleDelete(t.id)}
+              className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-red-500/10 text-fg-muted hover:text-red-600 transition-all"
+              title="Delete transaction"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
