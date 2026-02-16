@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -8,44 +10,24 @@ import {
   Pie,
   Cell,
   Legend,
-  BarChart,
-  Bar,
-  CartesianGrid,
-  Area,
-  AreaChart,
 } from 'recharts';
-import { TrendingUp, PieChartIcon, BarChart3 } from 'lucide-react';
 import { financeApi } from '../../api';
-import { Card, CardContent } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
+import { TrendingUp } from 'lucide-react';
 
-type DailyPoint = {
+type Transaction = {
+  id: string;
   date: string;
-  income: number;
-  expense: number;
-  net: number;
+  amount: string;
+  type: 'expense' | 'income' | 'transfer';
+  category?: { name: string } | null;
 };
-
-type CategoryPoint = {
-  category: string;
-  total: number;
-};
-
-type AccountPoint = {
-  account: string;
-  total: number;
-};
-
-interface SpendingTrendsProps {
-  compact?: boolean;
-}
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
-export function SpendingTrends({ compact }: SpendingTrendsProps) {
-  const [lineData, setLineData] = useState<DailyPoint[]>([]);
-  const [pieData, setPieData] = useState<CategoryPoint[]>([]);
-  const [barData, setBarData] = useState<AccountPoint[]>([]);
+export function SpendingTrends() {
+  const [lineData, setLineData] = useState<any[]>([]);
+  const [pieData, setPieData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,10 +37,34 @@ export function SpendingTrends({ compact }: SpendingTrendsProps) {
   const load = async () => {
     try {
       setLoading(true);
-      const res = await financeApi.getSpendingTrends({ days: compact ? 30 : 90 });
-      setLineData(res.data.daily || []);
-      setPieData(res.data.by_category || []);
-      setBarData(res.data.by_account || []);
+      const res = await financeApi.getTransactions({ page_size: 100 });
+      const txs: Transaction[] = res.data.results || res.data;
+
+      // aggregate by date for line chart
+      const dateMap: Record<string, number> = {};
+      const catMap: Record<string, number> = {};
+
+      txs.forEach((t) => {
+        const dateKey = new Date(t.date).toISOString().split('T')[0];
+        const amount = parseFloat(t.amount);
+        dateMap[dateKey] = (dateMap[dateKey] || 0) + amount;
+
+        const catName = t.category?.name || t.type;
+        catMap[catName] = (catMap[catName] || 0) + amount;
+      });
+
+      setLineData(
+        Object.keys(dateMap)
+          .sort()
+          .map((d) => ({ date: d, amount: dateMap[d] }))
+      );
+
+      setPieData(
+        Object.keys(catMap).map((cat) => ({
+          name: cat,
+          value: Math.round(catMap[cat]),
+        }))
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -66,272 +72,65 @@ export function SpendingTrends({ compact }: SpendingTrendsProps) {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
   if (loading) {
     return (
-      <div className={`grid gap-6 ${compact ? '' : 'grid-cols-1 lg:grid-cols-2'}`}>
-        {[...Array(compact ? 1 : 3)].map((_, i) => (
-          <Card key={i} className={compact ? '' : i === 2 ? 'lg:col-span-2' : ''}>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-4 w-20" />
-                </div>
-                <Skeleton className="h-48 w-full rounded-lg" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="text-center p-8 text-muted-foreground">
+        Loading spending trends...
       </div>
     );
   }
 
-  // Compact mode - just show the line chart
-  if (compact) {
-    const hasData = lineData.length > 0;
-    
+  if (lineData.length === 0) {
     return (
-      <div className="h-56">
-        {!hasData ? (
-          <EmptyState
-            icon={<TrendingUp className="w-8 h-8" />}
-            title="No spending data yet"
-            description="Add transactions to see your spending trends"
-            className="h-full"
-          />
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={lineData}>
-              <defs>
-                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="date" 
-                stroke="hsl(var(--fg-muted))"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => {
-                  const date = new Date(value);
-                  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                }}
-              />
-              <YAxis 
-                stroke="hsl(var(--fg-muted))"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--bg-elevated))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '12px',
-                  boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.2)',
-                }}
-                formatter={(value, name) => [formatCurrency(Number(value)), String(name)]}
-                labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="income" 
-                stroke="#10B981" 
-                strokeWidth={2.5}
-                fillOpacity={1} 
-                fill="url(#colorIncome)" 
-              />
-              <Area 
-                type="monotone" 
-                dataKey="expense" 
-                stroke="#EF4444" 
-                strokeWidth={2.5}
-                fillOpacity={1} 
-                fill="url(#colorExpense)" 
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
-      </div>
+      <EmptyState
+        icon={<TrendingUp className="w-8 h-8" />}
+        title="No spending data yet"
+        description="Add transactions to see your spending trends"
+      />
     );
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Income vs Expense Over Time */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2.5 mb-6">
-            <TrendingUp className="w-4 h-4 text-fg-muted" />
-            <h3 className="text-lg font-semibold text-foreground">Spending Over Time</h3>
-          </div>
-          {lineData.length === 0 ? (
-            <EmptyState
-              icon={<TrendingUp className="w-8 h-8" />}
-              title="No data available"
-              description="Add transactions to see your spending trends over time"
-              className="h-56"
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="p-4 rounded border bg-bg-elevated">
+        <h3 className="text-md font-medium mb-4">Daily Spending</h3>
+        <ResponsiveContainer width="100%" height={250}>
+          <LineChart data={lineData}>
+            <XAxis
+              dataKey="date"
+              stroke="hsl(var(--fg-muted))"
+              fontSize={10}
+              tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             />
-          ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={lineData}>
-                  <defs>
-                    <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="hsl(var(--fg-muted))"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => {
-                      const date = new Date(value);
-                      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    }}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--fg-muted))"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--bg-elevated))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.2)',
-                    }}
-                    formatter={(value, name) => [formatCurrency(Number(value)), String(name)]}
-                  />
-                  <Legend />
-                  <Area type="monotone" dataKey="income" stroke="#10B981" strokeWidth={2.5} fill="url(#colorIncome)" />
-                  <Area type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={2.5} fill="url(#colorExpense)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            <YAxis stroke="hsl(var(--fg-muted))" fontSize={10} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--bg-elevated))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+              }}
+              formatter={(value) => `$${Number(value).toFixed(2)}`}
+            />
+            <Line type="monotone" dataKey="amount" stroke="#3B82F6" strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
-      {/* Spending by Account */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2.5 mb-6">
-            <BarChart3 className="w-4 h-4 text-fg-muted" />
-            <h3 className="text-lg font-semibold text-foreground">Spend by Account</h3>
-          </div>
-          {barData.length === 0 ? (
-            <EmptyState
-              icon={<BarChart3 className="w-8 h-8" />}
-              title="No account data"
-              description="Add accounts and transactions to see spending by account"
-              className="h-56"
-            />
-          ) : (
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis type="number" stroke="hsl(var(--fg-muted))" fontSize={10} tickFormatter={(v) => `${v}`} />
-                  <YAxis dataKey="account" type="category" width={100} stroke="hsl(var(--fg-muted))" fontSize={10} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--bg-elevated))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.2)',
-                    }}
-                    formatter={(value) => [formatCurrency(Number(value)), 'Total']}
-                  />
-                  <Bar dataKey="total" fill="#3B82F6" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Category Breakdown */}
-      <Card className="lg:col-span-2">
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2.5 mb-6">
-            <PieChartIcon className="w-4 h-4 text-fg-muted" />
-            <h3 className="text-lg font-semibold text-foreground">Category Breakdown</h3>
-          </div>
-          {pieData.length === 0 ? (
-            <EmptyState
-              icon={<PieChartIcon className="w-8 h-8" />}
-              title="No category data"
-              description="Add categorized transactions to see your spending breakdown"
-              className="h-64"
-            />
-          ) : (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie 
-                    data={pieData} 
-                    dataKey="total" 
-                    nameKey="category" 
-                    cx="50%" 
-                    cy="50%" 
-                    outerRadius={90}
-                    innerRadius={60}
-                    paddingAngle={2}
-                    label={(props) => {
-                      const { name, percent } = props as { name: string; percent: number };
-                      return `${name} ${((percent || 0) * 100).toFixed(0)}%`;
-                    }}
-                    labelLine={false}
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Legend />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--bg-elevated))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '12px',
-                      boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.2)',
-                    }}
-                    formatter={(value) => [formatCurrency(Number(value)), 'Total']}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="p-4 rounded border bg-bg-elevated">
+        <h3 className="text-md font-medium mb-4">By Category</h3>
+        <ResponsiveContainer width="100%" height={250}>
+          <PieChart>
+            <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} label>
+              {pieData.map((_, i) => (
+                <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
+
