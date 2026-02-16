@@ -8,9 +8,13 @@ import {
   Area,
   AreaChart
 } from 'recharts';
-import { TrendingUp, TrendingDown, Wallet, Scale, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Scale, Activity, TrendingUp as GrowthIcon } from 'lucide-react';
 import { financeApi } from '../../api';
 import { Card, CardContent } from '../ui/Card';
+import { CircularProgress } from '../ui/CircularProgress';
+import { Skeleton } from '../ui/Skeleton';
+import { EmptyState } from '../ui/EmptyState';
+import { Button } from '../ui/Button';
 
 interface NetWorthHistory {
   date: string;
@@ -42,42 +46,61 @@ interface StatCardProps {
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;
   variant?: 'default' | 'success' | 'danger' | 'warning';
+  isLoading?: boolean;
 }
 
-function StatCard({ title, value, subtitle, icon, trend, trendValue, variant = 'default' }: StatCardProps) {
+function StatCard({ title, value, subtitle, icon, trend, trendValue, variant = 'default', isLoading }: StatCardProps) {
   const variantStyles = {
-    default: 'bg-bg-elevated',
-    success: 'bg-green-500/5 border-green-500/20',
-    danger: 'bg-red-500/5 border-red-500/20',
-    warning: 'bg-yellow-500/5 border-yellow-500/20',
+    default: 'border-border/60',
+    success: 'border-green-500/20 bg-green-500/[0.03]',
+    danger: 'border-red-500/20 bg-red-500/[0.03]',
+    warning: 'border-yellow-500/20 bg-yellow-500/[0.03]',
   };
 
-  const iconStyles = {
-    default: 'text-fg-muted',
-    success: 'text-green-600',
-    danger: 'text-red-600',
-    warning: 'text-yellow-600',
+  const iconBgStyles = {
+    default: 'bg-bg-subtle text-fg-muted',
+    success: 'bg-green-500/10 text-green-500',
+    danger: 'bg-red-500/10 text-red-500',
+    warning: 'bg-yellow-500/10 text-yellow-500',
   };
+
+  if (isLoading) {
+    return (
+      <Card className="border-border/40">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+            <Skeleton variant="circular" className="w-12 h-12" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className={`${variantStyles[variant]} border`}>
-      <CardContent className="p-5">
+    <Card className={`${variantStyles[variant]} border hover:shadow-soft-md transition-all duration-200 hover:-translate-y-0.5`}>
+      <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-fg-muted">{title}</p>
-            <p className="text-2xl font-semibold mt-1 truncate">{value}</p>
-            {subtitle && <p className="text-xs text-fg-muted mt-1">{subtitle}</p>}
+            <p className="text-2xl font-bold mt-1 truncate text-foreground tracking-tight">{value}</p>
+            {subtitle && <p className="text-xs text-fg-subtle mt-1.5">{subtitle}</p>}
             {trend && trendValue && (
-              <div className={`flex items-center gap-1 mt-2 text-xs ${
-                trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-fg-muted'
+              <div className={`flex items-center gap-1.5 mt-2.5 text-xs font-medium ${
+                trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-fg-muted'
               }`}>
-                {trend === 'up' ? <TrendingUp className="w-3 h-3" /> : 
-                 trend === 'down' ? <TrendingDown className="w-3 h-3" /> : null}
+                {trend === 'up' ? <TrendingUp className="w-3.5 h-3.5" /> : 
+                 trend === 'down' ? <TrendingDown className="w-3.5 h-3.5" /> : null}
                 <span>{trendValue}</span>
+                <span className="text-fg-subtle">vs last period</span>
               </div>
             )}
           </div>
-          <div className={`p-2 rounded-lg bg-bg-subtle ${iconStyles[variant]}`}>
+          <div className={`p-2.5 rounded-xl ${iconBgStyles[variant]}`}>
             {icon}
           </div>
         </div>
@@ -89,10 +112,12 @@ function StatCard({ title, value, subtitle, icon, trend, trendValue, variant = '
 export function FinanceOverview() {
   const [netWorth, setNetWorth] = useState<NetWorthSummary | null>(null);
   const [health, setHealth] = useState<HealthScore | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setLoading(true);
         const [netRes, healthRes] = await Promise.all([
           financeApi.getNetWorthSummary({ snapshot: 'true' }),
           financeApi.getHealthScore(),
@@ -101,6 +126,8 @@ export function FinanceOverview() {
         setHealth(healthRes.data);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     load();
@@ -116,7 +143,8 @@ export function FinanceOverview() {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
@@ -124,8 +152,13 @@ export function FinanceOverview() {
     ? ((historyData[historyData.length - 1].value - historyData[0].value) / Math.abs(historyData[0].value || 1)) * 100
     : 0;
 
+  const getHealthVariant = (score?: number) => {
+    if (!score) return 'default';
+    return score >= 70 ? 'success' : score >= 50 ? 'warning' : 'danger';
+  };
+
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -136,6 +169,7 @@ export function FinanceOverview() {
           trend={netWorthChange >= 0 ? 'up' : 'down'}
           trendValue={`${Math.abs(netWorthChange).toFixed(1)}%`}
           variant={netWorthChange >= 0 ? 'success' : 'danger'}
+          isLoading={loading}
         />
         <StatCard
           title="Total Assets"
@@ -143,6 +177,7 @@ export function FinanceOverview() {
           subtitle="Cash, investments, property"
           icon={<TrendingUp className="w-5 h-5" />}
           variant="success"
+          isLoading={loading}
         />
         <StatCard
           title="Liabilities"
@@ -150,135 +185,178 @@ export function FinanceOverview() {
           subtitle="Debts and obligations"
           icon={<TrendingDown className="w-5 h-5" />}
           variant="danger"
+          isLoading={loading}
         />
         <StatCard
           title="Financial Health"
-          value={`${health?.overall_score ?? '—'}%`}
+          value={`${health?.overall_score ?? '—'}`}
           subtitle={`Savings rate ${health?.savings_rate ?? '—'}%`}
           icon={<Activity className="w-5 h-5" />}
-          variant={health ? (health.overall_score >= 70 ? 'success' : health.overall_score >= 50 ? 'warning' : 'danger') : 'default'}
+          variant={getHealthVariant(health?.overall_score)}
+          isLoading={loading}
         />
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Net Worth Chart */}
         <Card className="lg:col-span-2">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-sm font-medium">Net Worth Trend</h3>
-                <p className="text-xs text-fg-muted">Your financial growth over time</p>
+                <h3 className="text-lg font-semibold text-foreground">Net Worth Trend</h3>
+                <p className="text-sm text-fg-muted mt-1">Your financial growth over time</p>
               </div>
-              <div className="flex items-center gap-2 text-xs text-fg-muted">
-                <Scale className="w-4 h-4" />
-                <span>Last 30 days</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-bg-subtle">
+                <Scale className="w-4 h-4 text-fg-muted" />
+                <span className="text-sm font-medium text-fg-muted">Last 30 days</span>
               </div>
             </div>
-            <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={historyData}>
-                  <defs>
-                    <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="hsl(var(--fg-muted))"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis 
-                    stroke="hsl(var(--fg-muted))"
-                    fontSize={11}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--bg-elevated))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 'var(--radius)',
-                    }}
-                    formatter={(value) => [formatCurrency(Number(value)), 'Net Worth']}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#3B82F6" 
-                    strokeWidth={2}
-                    fillOpacity={1} 
-                    fill="url(#colorNetWorth)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            
+            {loading ? (
+              <Skeleton className="h-48 w-full" />
+            ) : historyData.length === 0 ? (
+              <EmptyState
+                icon={<GrowthIcon className="w-8 h-8" />}
+                title="No data yet"
+                description="Start tracking your finances to see your net worth trends over time."
+                action={<Button size="sm">Add Your First Transaction</Button>}
+                className="h-48"
+              />
+            ) : (
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={historyData}>
+                    <defs>
+                      <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4}/>
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="hsl(var(--fg-muted))"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="hsl(var(--fg-muted))"
+                      fontSize={11}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--bg-elevated))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '12px',
+                        boxShadow: '0 8px 16px -4px rgb(0 0 0 / 0.2)',
+                      }}
+                      formatter={(value) => [formatCurrency(Number(value)), 'Net Worth']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#3B82F6" 
+                      strokeWidth={2.5}
+                      fillOpacity={1} 
+                      fill="url(#colorNetWorth)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Health Score Breakdown */}
+        {/* Enhanced Health Score Breakdown */}
         <Card>
-          <CardContent className="p-5">
-            <h3 className="text-sm font-medium mb-1">Score Breakdown</h3>
-            <p className="text-xs text-fg-muted mb-4">Financial health components</p>
-            
-            <div className="space-y-4">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-medium">Savings</span>
-                  <span className="text-xs text-fg-muted">{health?.savings_score ?? '—'}%</span>
-                </div>
-                <div className="h-2 bg-bg-subtle rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
-                    style={{ width: `${health?.savings_score ?? 0}%` }}
-                  />
-                </div>
+                <h3 className="text-lg font-semibold text-foreground">Health Score</h3>
+                <p className="text-sm text-fg-muted mt-1">Financial health components</p>
               </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-medium">Budget Discipline</span>
-                  <span className="text-xs text-fg-muted">{health?.budget_score ?? '—'}%</span>
-                </div>
-                <div className="h-2 bg-bg-subtle rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-500"
-                    style={{ width: `${health?.budget_score ?? 0}%` }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-medium">Debt Load</span>
-                  <span className="text-xs text-fg-muted">{health?.debt_score ?? '—'}%</span>
-                </div>
-                <div className="h-2 bg-bg-subtle rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-500"
-                    style={{ width: `${health?.debt_score ?? 0}%` }}
-                  />
-                </div>
-              </div>
+              {health && (
+                <CircularProgress 
+                  value={health.overall_score} 
+                  size="md" 
+                  variant={getHealthVariant(health.overall_score)}
+                />
+              )}
             </div>
+            
+            {loading ? (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                    <Skeleton className="h-2 w-full" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-fg-muted">Savings Rate</span>
+                    <span className="text-sm font-semibold text-foreground">{health?.savings_score ?? '—'}%</span>
+                  </div>
+                  <div className="h-2.5 bg-bg-subtle rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                      style={{ width: `${health?.savings_score ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-fg-muted">Budget Discipline</span>
+                    <span className="text-sm font-semibold text-foreground">{health?.budget_score ?? '—'}%</span>
+                  </div>
+                  <div className="h-2.5 bg-bg-subtle rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-500"
+                      style={{ width: `${health?.budget_score ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-fg-muted">Debt Load</span>
+                    <span className="text-sm font-semibold text-foreground">{health?.debt_score ?? '—'}%</span>
+                  </div>
+                  <div className="h-2.5 bg-bg-subtle rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-500"
+                      style={{ width: `${health?.debt_score ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Summary Stats */}
-            <div className="mt-6 pt-4 border-t border-border space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-fg-muted">Monthly Income</span>
-                <span className="font-medium text-green-600">+{formatCurrency(health?.income_total)}</span>
+            {!loading && health && (
+              <div className="mt-6 pt-5 border-t border-border/60 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-fg-muted">Monthly Income</span>
+                  <span className="text-sm font-semibold text-green-500">+{formatCurrency(health.income_total)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-fg-muted">Monthly Expenses</span>
+                  <span className="text-sm font-semibold text-red-500">-{formatCurrency(health.expense_total)}</span>
+                </div>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-fg-muted">Monthly Expenses</span>
-                <span className="font-medium text-red-600">-{formatCurrency(health?.expense_total)}</span>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
