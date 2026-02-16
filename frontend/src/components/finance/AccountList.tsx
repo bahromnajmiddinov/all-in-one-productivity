@@ -96,13 +96,13 @@ export function AccountList({ onUpdate }: AccountListProps) {
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
-            <div className="w-10 h-10 rounded-full bg-bg-subtle" />
+          <div key={i} className="flex items-center gap-3 p-4">
+            <div className="w-12 h-12 rounded-xl bg-bg-subtle animate-pulse" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-1/3 bg-bg-subtle rounded" />
-              <div className="h-3 w-1/4 bg-bg-subtle rounded" />
+              <div className="h-4 w-1/2 bg-bg-subtle rounded animate-pulse" />
+              <div className="h-3 w-1/3 bg-bg-subtle rounded animate-pulse" />
             </div>
           </div>
         ))}
@@ -113,12 +113,12 @@ export function AccountList({ onUpdate }: AccountListProps) {
   if (accounts.length === 0 && !showForm) {
     return (
       <EmptyState
-        icon={<Landmark className="w-8 h-8" />}
-        title="No accounts"
-        description="Create an account to start logging transactions."
+        icon={<Landmark className="w-10 h-10" />}
+        title="No accounts yet"
+        description="Create an account to start tracking your finances and transactions."
         action={
           <Button onClick={() => setShowForm(true)} variant="secondary" size="sm">
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus className="w-4 h-4 mr-1.5" />
             Add Account
           </Button>
         }

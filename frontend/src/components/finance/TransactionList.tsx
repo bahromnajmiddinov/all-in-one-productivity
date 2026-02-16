@@ -114,11 +114,11 @@ export function TransactionList({ limit, onUpdate }: TransactionListProps) {
     return (
       <div className="space-y-3">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex items-center gap-4 p-3 animate-pulse">
-            <div className="w-10 h-10 rounded-full bg-bg-subtle" />
+          <div key={i} className="flex items-center gap-4 p-4">
+            <div className="w-12 h-12 rounded-full bg-bg-subtle animate-pulse" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-1/3 bg-bg-subtle rounded" />
-              <div className="h-3 w-1/4 bg-bg-subtle rounded" />
+              <div className="h-4 w-1/3 bg-bg-subtle rounded animate-pulse" />
+              <div className="h-3 w-1/4 bg-bg-subtle rounded animate-pulse" />
             </div>
           </div>
         ))}
@@ -129,15 +129,15 @@ export function TransactionList({ limit, onUpdate }: TransactionListProps) {
   if (transactions.length === 0) {
     return (
       <EmptyState
-        icon={<Wallet className="w-8 h-8" />}
+        icon={<Wallet className="w-10 h-10" />}
         title="No transactions yet"
-        description="Add your first transaction to start tracking your finances."
+        description="Start tracking your finances by adding your first income or expense."
       />
     );
   }
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {transactions.map((t) => {
         const config = typeConfig[t.type];
         const Icon = config.icon;
@@ -146,45 +146,45 @@ export function TransactionList({ limit, onUpdate }: TransactionListProps) {
         return (
           <div
             key={t.id}
-            className="group flex items-center gap-4 p-3 rounded-lg hover:bg-bg-subtle transition-colors"
+            className="group flex items-center gap-4 p-4 rounded-xl hover:bg-bg-subtle/50 transition-colors"
           >
             {/* Type Icon */}
-            <div className={`flex-shrink-0 w-10 h-10 rounded-full ${config.bgColor} flex items-center justify-center`}>
+            <div className={`flex-shrink-0 w-12 h-12 rounded-xl ${config.bgColor} flex items-center justify-center`}>
               <Icon className={`w-5 h-5 ${config.color}`} />
             </div>
 
             {/* Transaction Details */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm truncate">
+                <span className="font-semibold text-sm truncate text-foreground">
                   {t.memo || categoryName || t.type.charAt(0).toUpperCase() + t.type.slice(1)}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-fg-muted mt-0.5">
+              <div className="flex items-center gap-2 text-xs text-fg-muted mt-1">
                 <span>{getAccountName(t.account)}</span>
                 {categoryName && (
                   <>
                     <span>•</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-bg-subtle">{categoryName}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-bg-subtle text-xs">{categoryName}</span>
                   </>
                 )}
               </div>
             </div>
 
             {/* Date */}
-            <div className="hidden sm:block text-xs text-fg-muted">
+            <div className="hidden sm:block text-xs text-fg-muted font-medium">
               {formatDate(t.date)}
             </div>
 
             {/* Amount */}
-            <div className={`text-sm font-semibold ${config.color}`}>
+            <div className={`text-sm font-bold ${config.color}`}>
               {formatAmount(t.amount, t.type)}
             </div>
 
             {/* Actions */}
             <button
               onClick={() => handleDelete(t.id)}
-              className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-red-500/10 text-fg-muted hover:text-red-600 transition-all"
+              className="opacity-0 group-hover:opacity-100 p-2 rounded-lg hover:bg-red-500/10 text-fg-muted hover:text-red-500 transition-all"
               title="Delete transaction"
             >
               <Trash2 className="w-4 h-4" />

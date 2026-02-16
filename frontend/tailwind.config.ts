@@ -26,6 +26,7 @@ const config = {
         'fg-subtle': 'hsl(var(--fg-subtle))',
         'bg-elevated': 'hsl(var(--bg-elevated))',
         'bg-subtle': 'hsl(var(--bg-subtle))',
+        'bg-hover': 'hsl(var(--bg-hover))',
         primary: {
           DEFAULT: 'hsl(var(--fg))',
           foreground: 'hsl(var(--bg))',
