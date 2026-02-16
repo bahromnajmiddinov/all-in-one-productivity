@@ -107,14 +107,45 @@ export const pomodoroApi = {
 };
 
 export const calendarApi = {
-  getEvents: (params?: { start?: string; end?: string }) => 
+  // Calendars
+  getCalendars: () => api.get('/calendar/'),
+  getCalendar: (id: string) => api.get(`/calendar/${id}/`),
+  createCalendar: (data: any) => api.post('/calendar/', data),
+  updateCalendar: (id: string, data: any) => api.put(`/calendar/${id}/`, data),
+  deleteCalendar: (id: string) => api.delete(`/calendar/${id}/`),
+  
+  // Events
+  getEvents: (params?: { start?: string; end?: string; calendar?: string; event_type?: string; status?: string }) => 
     api.get('/calendar/events/', { params }),
+  getEvent: (id: string) => api.get(`/calendar/events/${id}/`),
   createEvent: (data: Partial<CalendarEvent>) => api.post('/calendar/events/', data),
   updateEvent: (id: string, data: Partial<CalendarEvent>) => 
     api.put(`/calendar/events/${id}/`, data),
+  partialUpdateEvent: (id: string, data: Partial<CalendarEvent>) => 
+    api.patch(`/calendar/events/${id}/`, data),
   deleteEvent: (id: string) => api.delete(`/calendar/events/${id}/`),
   getDayEvents: (date: string) => api.get('/calendar/events/day/', { params: { date } }),
   getTodayEvents: () => api.get('/calendar/events/today/'),
+  getUpcomingEvents: (limit?: number) => api.get('/calendar/events/upcoming/', { params: { limit } }),
+  getEventsRange: (start: string, end: string) => api.get('/calendar/events/range/', { params: { start, end } }),
+  
+  // Analytics
+  checkConflicts: (params: { start_date: string; start_time: string; end_time: string; end_date?: string; exclude_id?: string }) =>
+    api.get('/calendar/events/check_conflicts/', { params }),
+  getAnalytics: (params?: { start?: string; end?: string }) =>
+    api.get('/calendar/events/analytics/', { params }),
+  getHeatmap: (params?: { start?: string; end?: string }) =>
+    api.get('/calendar/events/heatmap/', { params }),
+  getFreeTime: (params?: { start?: string; end?: string; work_start?: number; work_end?: number }) =>
+    api.get('/calendar/events/free_time/', { params }),
+  getMeetingLoad: (period?: 'week' | 'month' | 'quarter') =>
+    api.get('/calendar/events/meeting_load/', { params: { period } }),
+  
+  // Integration
+  getIntegrationView: (params?: { start?: string; end?: string }) =>
+    api.get('/calendar/events/integration/', { params }),
+  
+  // Preferences
   getPreferences: () => api.get('/calendar/preferences/'),
   updatePreferences: (data: any) => api.put('/calendar/preferences/', data),
 };
