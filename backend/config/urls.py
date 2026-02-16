@@ -41,4 +41,5 @@ urlpatterns = [
     path('api/v1/notes/', include('apps.notes.urls')),
     path('api/v1/', include('apps.habits.urls')),
     path('api/v1/pomodoro/', include('apps.pomodoro.urls')),
+    path('api/v1/finance/', include('apps.finance.urls')),
 ]

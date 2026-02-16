@@ -9,6 +9,7 @@ import {
   FileText,
   Heart,
   Target,
+  CreditCard,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -28,6 +29,7 @@ const navItems = [
   { to: '/notes', label: 'Notes', icon: FileText },
   { to: '/health', label: 'Health', icon: Heart },
   { to: '/habits', label: 'Habits', icon: Target },
+  { to: '/finance', label: 'Finance', icon: CreditCard },
 ];
 
 export function Layout() {

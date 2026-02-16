@@ -11,6 +11,7 @@ import { NoteDetail } from './pages/NoteDetail';
 import { Health } from './pages/Health';
 import { Habits } from './pages/Habits';
 import { Tasks } from './pages/Tasks';
+import { Finance } from './pages/Finance';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -40,6 +41,7 @@ function App() {
           <Route path="notes/:id" element={<NoteDetail />} />
           <Route path="health" element={<Health />} />
           <Route path="habits" element={<Habits />} />
+          <Route path="finance" element={<Finance />} />
         </Route>
       </Routes>
     </BrowserRouter>

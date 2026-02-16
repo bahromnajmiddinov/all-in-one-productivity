@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'apps.notes',
     'apps.health',
     'apps.habits',
+    'apps.finance',
 ]
 
 MIDDLEWARE = [
@@ -92,6 +93,10 @@ CELERY_BEAT_SCHEDULE = {
     'habits.smart_reminders_daily': {
         'task': 'apps.habits.tasks.dispatch_smart_reminders',
         'schedule': crontab(hour=7, minute=0),
+    },
+    'finance.process_recurring_hourly': {
+        'task': 'apps.finance.tasks.process_recurring_transactions',
+        'schedule': crontab(minute=0, hour='*'),
     },
 }
 

@@ -204,4 +204,28 @@ export const healthApi = {
   createBodyMetric: (data: Partial<BodyMetrics>) => api.post('/health/body-metrics/', data),
 };
 
+export const financeApi = {
+  // Accounts
+  getAccounts: () => api.get('/finance/accounts/'),
+  createAccount: (data: unknown) => api.post('/finance/accounts/', data),
+  updateAccount: (id: string, data: unknown) => api.patch(`/finance/accounts/${id}/`, data),
+  deleteAccount: (id: string) => api.delete(`/finance/accounts/${id}/`),
+
+  // Categories
+  getCategories: () => api.get('/finance/categories/'),
+  createCategory: (data: unknown) => api.post('/finance/categories/', data),
+
+  // Transactions
+  getTransactions: (params?: Record<string, string | number>) => api.get('/finance/transactions/', { params }),
+  createTransaction: (data: unknown) => api.post('/finance/transactions/', data),
+
+  // Budgets & Goals
+  getBudgets: () => api.get('/finance/budgets/'),
+  getGoals: () => api.get('/finance/goals/'),
+
+  // Recurring
+  getRecurring: () => api.get('/finance/recurring/'),
+  runRecurringNow: () => api.post('/finance/recurring/run_due/'),
+};
+
 export default api;
