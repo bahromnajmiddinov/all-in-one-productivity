@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Pin, Star, Archive, RotateCcw, FileText, CheckSquare, Code, Mic, Globe, Markdown } from 'lucide-react';
+import { Pin, Star, Archive, RotateCcw, FileText, CheckSquare, Code, Mic, Globe } from 'lucide-react';
 import type { NoteListItem, NoteType } from '../../types/notes';
 
 interface Props {
@@ -17,7 +16,7 @@ const noteTypeIcons: Record<NoteType, typeof FileText> = {
   code: Code,
   voice: Mic,
   web_clip: Globe,
-  markdown: Markdown,
+  markdown: FileText,
 };
 
 const noteTypeColors: Record<NoteType, string> = {
