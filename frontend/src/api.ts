@@ -166,16 +166,28 @@ export const habitApi = {
   getDashboard: () => api.get('/habits/dashboard/'),
   getCalendar: (year: number, month: number) =>
     api.get('/habits/calendar/', { params: { year, month } }),
+  getAnalytics: (days?: number) => api.get('/habits/analytics/', { params: days ? { days } : {} }),
+  getCorrelations: (days?: number) => api.get('/habits/correlations/', { params: days ? { days } : {} }),
+  getChains: (days?: number) => api.get('/habits/chains/', { params: days ? { days } : {} }),
+  getTimeOfDay: (days?: number) => api.get('/habits/time_of_day/', { params: days ? { days } : {} }),
   toggle: (id: string, date?: string) =>
     api.post(`/habits/${id}/toggle/`, date ? { date } : {}),
   complete: (id: string, date?: string) =>
     api.post(`/habits/${id}/complete/`, date ? { date } : {}),
-  // Reminders and stacks
+  // Categories
+  getCategories: () => api.get('/categories/'),
+  createCategory: (data: { name: string }) => api.post('/categories/', data),
+  deleteCategory: (id: string) => api.delete(`/categories/${id}/`),
+  // Reminders
   getReminders: () => api.get('/reminders/'),
   createReminder: (data: any) => api.post('/reminders/', data),
   updateReminder: (id: string, data: any) => api.put(`/reminders/${id}/`, data),
   deleteReminder: (id: string) => api.delete(`/reminders/${id}/`),
   suggestReminderTime: (id: string) => api.get(`/reminders/${id}/suggest_time/`),
+  // Stacks
+  getStacks: () => api.get('/stacks/'),
+  createStack: (data: any) => api.post('/stacks/', data),
+  deleteStack: (id: string) => api.delete(`/stacks/${id}/`),
 };
 
 export const healthApi = {

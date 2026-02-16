@@ -163,9 +163,11 @@ class HabitViewSet(viewsets.ModelViewSet):
         days = int(request.query_params.get('days', 90))
         end = timezone.now().date()
         start = end - timedelta(days=days - 1)
+        prev_end = start - timedelta(days=1)
+        prev_start = prev_end - timedelta(days=days - 1)
 
         habits = list(self.get_queryset())
-        completions_qs = HabitCompletion.objects.filter(habit__in=habits, date__range=[start, end], completed=True)
+        completions_qs = HabitCompletion.objects.filter(habit__in=habits, date__range=[prev_start, end], completed=True)
         completions_by_habit = {}
         for hid, d in completions_qs.values_list('habit_id', 'date'):
             completions_by_habit.setdefault(str(hid), set()).add(d)
@@ -174,17 +176,30 @@ class HabitViewSet(viewsets.ModelViewSet):
         for h in habits:
             hid = str(h.id)
             comp_dates = completions_by_habit.get(hid, set())
-            # compute due dates in window
             due_count = 0
+            prev_due_count = 0
             for i in range(days):
-                d = start + timedelta(days=i)
-                if h.is_due_on_date(d):
+                current_day = start + timedelta(days=i)
+                prev_day = prev_start + timedelta(days=i)
+                if h.is_due_on_date(current_day):
                     due_count += 1
+                if h.is_due_on_date(prev_day):
+                    prev_due_count += 1
             completed_count = sum(1 for d in comp_dates if start <= d <= end)
+            prev_completed_count = sum(1 for d in comp_dates if prev_start <= d <= prev_end)
             completion_rate = round(100.0 * completed_count / due_count, 1) if due_count > 0 else 0.0
+            prev_completion_rate = (
+                round(100.0 * prev_completed_count / prev_due_count, 1) if prev_due_count > 0 else 0.0
+            )
+            trend_change = round(completion_rate - prev_completion_rate, 1)
+            if trend_change > 0.1:
+                trend_direction = 'up'
+            elif trend_change < -0.1:
+                trend_direction = 'down'
+            else:
+                trend_direction = 'flat'
 
-            # strength score: weighted combination of completion_rate, streaks, recency
-            days_since = (end - max(comp_dates) ).days if comp_dates else None
+            days_since = (end - max(comp_dates)).days if comp_dates else None
             recency = 1.0 if days_since is None else max(0.0, 1.0 - (days_since / max(90, days)))
             streak_factor = min(h.current_streak / 30.0, 1.0)
             strength = 0.6 * (completion_rate / 100.0) + 0.25 * streak_factor + 0.15 * recency
@@ -194,6 +209,9 @@ class HabitViewSet(viewsets.ModelViewSet):
                 'id': hid,
                 'name': h.name,
                 'completion_rate': completion_rate,
+                'previous_completion_rate': prev_completion_rate,
+                'trend_change': trend_change,
+                'trend_direction': trend_direction,
                 'total_completions': completed_count,
                 'due_count': due_count,
                 'current_streak': h.current_streak,
@@ -288,6 +306,55 @@ class HabitViewSet(viewsets.ModelViewSet):
             out.append({'id': hid, 'name': h.name, 'runs': runs})
 
         return Response({'start': str(start), 'end': str(end), 'habits': out})
+
+    @action(detail=False, methods=['get'])
+    def time_of_day(self, request):
+        """Return time-of-day completion patterns and optimal times per habit."""
+        days = int(request.query_params.get('days', 90))
+        end = timezone.now().date()
+        start = end - timedelta(days=days - 1)
+
+        habits = list(self.get_queryset())
+        completions = HabitCompletion.objects.filter(
+            habit__in=habits,
+            date__range=[start, end],
+            completed=True,
+            time_of_day_minutes__isnull=False,
+        )
+
+        data = {str(h.id): {'counts': [0] * 24, 'total_minutes': 0, 'total': 0} for h in habits}
+        for hid, minutes in completions.values_list('habit_id', 'time_of_day_minutes'):
+            hid = str(hid)
+            hour = minutes // 60
+            bucket = data.get(hid)
+            if bucket is None:
+                continue
+            bucket['counts'][hour] += 1
+            bucket['total_minutes'] += minutes
+            bucket['total'] += 1
+
+        results = []
+        for h in habits:
+            hid = str(h.id)
+            bucket = data.get(hid, {'counts': [0] * 24, 'total_minutes': 0, 'total': 0})
+            total = bucket['total']
+            avg_minutes = int(round(bucket['total_minutes'] / total)) if total else None
+            best_time_minutes = None
+            if total:
+                best_hour = max(range(24), key=lambda idx: bucket['counts'][idx])
+                best_time_minutes = best_hour * 60
+            elif h.preferred_times:
+                best_time_minutes = h.preferred_times[0]
+            results.append({
+                'id': hid,
+                'name': h.name,
+                'counts': bucket['counts'],
+                'total_completions': total,
+                'average_minutes': avg_minutes,
+                'best_time_minutes': best_time_minutes,
+            })
+
+        return Response({'start': str(start), 'end': str(end), 'habits': results})
 
 
 class HabitCompletionViewSet(viewsets.ReadOnlyModelViewSet):
