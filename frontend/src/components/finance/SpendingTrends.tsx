@@ -1,10 +1,42 @@
 import { useEffect, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
+  CartesianGrid,
+} from 'recharts';
 import { financeApi } from '../../api';
 
+type DailyPoint = {
+  date: string;
+  income: number;
+  expense: number;
+  net: number;
+};
+
+type CategoryPoint = {
+  category: string;
+  total: number;
+};
+
+type AccountPoint = {
+  account: string;
+  total: number;
+};
+
 export function SpendingTrends() {
-  const [lineData, setLineData] = useState<any[]>([]);
-  const [pieData, setPieData] = useState<any[]>([]);
+  const [lineData, setLineData] = useState<DailyPoint[]>([]);
+  const [pieData, setPieData] = useState<CategoryPoint[]>([]);
+  const [barData, setBarData] = useState<AccountPoint[]>([]);
 
   useEffect(() => {
     load();
@@ -12,21 +44,10 @@ export function SpendingTrends() {
 
   const load = async () => {
     try {
-      const res = await financeApi.getTransactions({ page_size: 100 });
-      const txs = res.data.results || res.data;
-
-      // simple line: sum by date
-      const sums: Record<string, number> = {};
-      const byCategory: Record<string, number> = {};
-      txs.forEach((t: any) => {
-        const d = new Date(t.date).toISOString().slice(0,10);
-        sums[d] = (sums[d] || 0) + parseFloat(t.amount);
-        const cat = t.category?.name || t.type;
-        byCategory[cat] = (byCategory[cat] || 0) + parseFloat(t.amount);
-      });
-
-      setLineData(Object.keys(sums).sort().map((d) => ({ date: d, amount: sums[d] })));
-      setPieData(Object.keys(byCategory).map((k) => ({ name: k, value: byCategory[k] })));
+      const res = await financeApi.getSpendingTrends({ days: 90 });
+      setLineData(res.data.daily || []);
+      setPieData(res.data.by_category || []);
+      setBarData(res.data.by_account || []);
     } catch (err) {
       console.error(err);
     }
@@ -40,19 +61,34 @@ export function SpendingTrends() {
         <h3 className="text-md font-medium mb-2">Spending Over Time</h3>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={lineData}>
+            <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="amount" stroke="#3B82F6" strokeWidth={2} />
+            <Line type="monotone" dataKey="expense" stroke="#EF4444" strokeWidth={2} name="Expenses" />
+            <Line type="monotone" dataKey="income" stroke="#10B981" strokeWidth={2} name="Income" />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       <div className="p-4 rounded border bg-bg-elevated">
+        <h3 className="text-md font-medium mb-2">Spend by Account</h3>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={barData} layout="vertical">
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" />
+            <YAxis dataKey="account" type="category" width={80} />
+            <Tooltip />
+            <Bar dataKey="total" fill="#3B82F6" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="p-4 rounded border bg-bg-elevated lg:col-span-2">
         <h3 className="text-md font-medium mb-2">Category Breakdown</h3>
         <ResponsiveContainer width="100%" height={240}>
           <PieChart>
-            <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} label>
+            <Pie data={pieData} dataKey="total" nameKey="category" outerRadius={80} label>
               {pieData.map((_, i) => (
                 <Cell key={`cell-${i}`} fill={colors[i % colors.length]} />
               ))}

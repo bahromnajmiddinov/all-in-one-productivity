@@ -25,6 +25,18 @@ class Category(models.Model):
         return self.name
 
 
+class IncomeSource(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='income_sources')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Transaction(models.Model):
     TYPE_CHOICES = (('expense', 'Expense'), ('income', 'Income'), ('transfer', 'Transfer'))
 
@@ -34,6 +46,13 @@ class Transaction(models.Model):
     currency = models.CharField(max_length=3, default='USD')
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL, related_name='transactions')
+    income_source = models.ForeignKey(
+        IncomeSource,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='transactions',
+    )
     memo = models.TextField(blank=True)
     date = models.DateTimeField(default=timezone.now)
     external_id = models.CharField(max_length=255, blank=True, null=True)
@@ -94,3 +113,48 @@ class RecurringTransaction(models.Model):
 
     def __str__(self):
         return f"Recurring {self.amount} {self.currency} ({self.frequency})"
+
+
+class InvestmentHolding(models.Model):
+    ASSET_TYPES = (
+        ('stock', 'Stock'),
+        ('fund', 'Fund'),
+        ('crypto', 'Crypto'),
+        ('bond', 'Bond'),
+        ('cash', 'Cash'),
+        ('other', 'Other'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='investment_holdings')
+    account = models.ForeignKey(Account, null=True, blank=True, on_delete=models.SET_NULL, related_name='investments')
+    name = models.CharField(max_length=200)
+    symbol = models.CharField(max_length=50, blank=True)
+    asset_type = models.CharField(max_length=20, choices=ASSET_TYPES, default='stock')
+    quantity = models.DecimalField(max_digits=16, decimal_places=4, default=Decimal('0.0000'))
+    cost_basis = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal('0.00'))
+    current_value = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal('0.00'))
+    currency = models.CharField(max_length=3, default='USD')
+    last_updated = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class NetWorthSnapshot(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='net_worth_snapshots')
+    date = models.DateField()
+    assets = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal('0.00'))
+    liabilities = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal('0.00'))
+    net_worth = models.DecimalField(max_digits=16, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        unique_together = ('user', 'date')
+        ordering = ['date']
+
+    def save(self, *args, **kwargs):
+        self.net_worth = self.assets - self.liabilities
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.date} - {self.net_worth}"

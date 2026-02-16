@@ -8,8 +8,8 @@ type Transaction = {
   type: string;
   memo?: string;
   date: string;
-  account: { id: string; name: string };
-  category?: { id: string; name: string } | null;
+  account: { id: string; name: string } | string;
+  category?: { id: string; name: string } | string | null;
 };
 
 export function TransactionList() {
@@ -28,6 +28,17 @@ export function TransactionList() {
     }
   };
 
+  const getAccountName = (account: Transaction['account']) => {
+    if (typeof account === 'string') return account;
+    return account?.name || '—';
+  };
+
+  const getCategoryName = (category?: Transaction['category']) => {
+    if (!category) return null;
+    if (typeof category === 'string') return category;
+    return category?.name || null;
+  };
+
   return (
     <div className="space-y-3">
       {transactions.length === 0 ? (
@@ -37,8 +48,8 @@ export function TransactionList() {
           {transactions.map((t) => (
             <div key={t.id} className="p-3 rounded border bg-bg-elevated flex justify-between">
               <div>
-                <div className="text-sm font-medium">{t.account?.name || '—'} • {t.category?.name || t.type}</div>
-                <div className="text-xs text-muted-foreground">{t.memo}</div>
+                <div className="text-sm font-medium">{getAccountName(t.account)} • {getCategoryName(t.category) || t.type}</div>
+                <div className="text-xs text-muted-foreground">{t.memo || 'No memo'}</div>
               </div>
               <div className="text-sm">{t.amount} {t.currency}</div>
             </div>
