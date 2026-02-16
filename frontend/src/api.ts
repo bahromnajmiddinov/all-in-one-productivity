@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { CalendarEvent } from './types/calendar';
-import type { Note, NoteFolder, NoteTag, NoteChecklistItem } from './types/notes';
+import type { Note, NoteFolder, NoteTag, NoteChecklistItem, NoteAttachment, NoteTemplate, WebClipData } from './types/notes';
 import type {
   WaterSettings,
   SleepLog,
@@ -157,34 +157,78 @@ export const notesApi = {
   createFolder: (data: Partial<NoteFolder>) => api.post('/notes/folders/', data),
   updateFolder: (id: string, data: Partial<NoteFolder>) => api.put(`/notes/folders/${id}/`, data),
   deleteFolder: (id: string) => api.delete(`/notes/folders/${id}/`),
-  
+
   // Tags
   getTags: () => api.get('/notes/tags/'),
+  getPopularTags: () => api.get('/notes/tags/popular/'),
   createTag: (data: Partial<NoteTag>) => api.post('/notes/tags/', data),
   updateTag: (id: string, data: Partial<NoteTag>) => api.put(`/notes/tags/${id}/`, data),
   deleteTag: (id: string) => api.delete(`/notes/tags/${id}/`),
-  
+
   // Notes
-  getNotes: (params?: { folder?: string; tag?: string; favorites?: boolean; search?: string }) => 
+  getNotes: (params?: { folder?: string; tag?: string; favorites?: boolean; pinned?: boolean; search?: string; note_type?: string; date_from?: string; date_to?: string; archived?: string }) =>
     api.get('/notes/', { params }),
   getNote: (id: string) => api.get(`/notes/${id}/`),
   createNote: (data: Partial<Note>) => api.post('/notes/', data),
   updateNote: (id: string, data: Partial<Note>) => api.put(`/notes/${id}/`, data),
   deleteNote: (id: string) => api.delete(`/notes/${id}/`),
-  
+
   // Note actions
   pinNote: (id: string) => api.post(`/notes/${id}/pin/`),
   favoriteNote: (id: string) => api.post(`/notes/${id}/favorite/`),
   archiveNote: (id: string) => api.post(`/notes/${id}/archive/`),
   restoreNote: (id: string) => api.post(`/notes/${id}/restore/`),
   getArchivedNotes: () => api.get('/notes/archived/'),
-  
+
+  // Links (bidirectional/Zettelkasten)
+  addLink: (id: string, targetNoteId: string, linkText?: string) =>
+    api.post(`/notes/${id}/add_link/`, { target_note_id: targetNoteId, link_text: linkText }),
+  removeLink: (id: string, targetNoteId: string) =>
+    api.post(`/notes/${id}/remove_link/`, { target_note_id: targetNoteId }),
+  getBacklinks: (id: string) => api.get(`/notes/${id}/backlinks/`),
+
+  // Attachments
+  getAttachments: (params?: { note?: string }) => api.get('/notes/attachments/', { params }),
+  createAttachment: (data: FormData) => api.post('/notes/attachments/', data),
+  updateAttachment: (id: string, data: Partial<NoteAttachment>) => api.put(`/notes/attachments/${id}/`, data),
+  deleteAttachment: (id: string) => api.delete(`/notes/attachments/${id}/`),
+
   // Checklist
-  addChecklistItem: (noteId: string, content: string) => 
+  addChecklistItem: (noteId: string, content: string) =>
     api.post('/notes/checklist-items/', { note: noteId, content }),
-  updateChecklistItem: (id: string, data: Partial<NoteChecklistItem>) => 
+  updateChecklistItem: (id: string, data: Partial<NoteChecklistItem>) =>
     api.put(`/notes/checklist-items/${id}/`, data),
   deleteChecklistItem: (id: string) => api.delete(`/notes/checklist-items/${id}/`),
+
+  // Templates
+  getTemplates: () => api.get('/notes/templates/'),
+  getDefaultTemplates: () => api.get('/notes/templates/defaults/'),
+  createTemplate: (data: Partial<NoteTemplate>) => api.post('/notes/templates/', data),
+  updateTemplate: (id: string, data: Partial<NoteTemplate>) => api.put(`/notes/templates/${id}/`, data),
+  deleteTemplate: (id: string) => api.delete(`/notes/templates/${id}/`),
+  useTemplate: (id: string) => api.post(`/notes/templates/${id}/use/`),
+
+  // Quick Capture
+  quickCapture: (data: { capture_type: string; content: string; title?: string; folder?: string; tags?: string[]; auto_convert?: boolean }) =>
+    api.post('/notes/quick_capture/', data),
+  getQuickCaptures: () => api.get('/notes/quick-captures/'),
+  convertQuickCapture: (id: string) => api.post(`/notes/quick-captures/${id}/convert/`),
+  deleteQuickCapture: (id: string) => api.delete(`/notes/quick-captures/${id}/`),
+
+  // Web Clip
+  webClip: (data: WebClipData) =>
+    api.post('/notes/web_clip/', data),
+
+  // Knowledge Graph
+  getGraphData: () => api.get('/notes/graph/'),
+
+  // Analytics
+  getAnalytics: () => api.get('/notes/analytics/'),
+  getNoteAnalytics: (id: string) => api.get(`/notes/analytics/${id}/`),
+
+  // Search
+  search: (params: { q: string; folder?: string; tag?: string; note_type?: string; date_from?: string; date_to?: string }) =>
+    api.get('/notes/search/', { params }),
 };
 
 export const habitApi = {
