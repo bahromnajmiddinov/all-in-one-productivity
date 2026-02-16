@@ -221,10 +221,44 @@ export const financeApi = {
 
   // Budgets & Goals
   getBudgets: () => api.get('/finance/budgets/'),
+  createBudget: (data: unknown) => api.post('/finance/budgets/', data),
+  updateBudget: (id: string, data: unknown) => api.patch(`/finance/budgets/${id}/`, data),
   getGoals: () => api.get('/finance/goals/'),
+  createGoal: (data: unknown) => api.post('/finance/goals/', data),
+  updateGoal: (id: string, data: unknown) => api.patch(`/finance/goals/${id}/`, data),
+
+  // Income sources
+  getIncomeSources: () => api.get('/finance/income-sources/'),
+  createIncomeSource: (data: unknown) => api.post('/finance/income-sources/', data),
+
+  // Investments
+  getInvestments: () => api.get('/finance/investments/'),
+  createInvestment: (data: unknown) => api.post('/finance/investments/', data),
+  updateInvestment: (id: string, data: unknown) => api.patch(`/finance/investments/${id}/`, data),
+
+  // Net worth
+  getNetWorthSnapshots: () => api.get('/finance/net-worth/'),
+  createNetWorthSnapshot: (data: unknown) => api.post('/finance/net-worth/', data),
+
+  // Analytics
+  getSpendingTrends: (params?: Record<string, string | number>) =>
+    api.get('/finance/analytics/spending_trends/', { params }),
+  getCashFlow: (params?: Record<string, string | number>) =>
+    api.get('/finance/analytics/cash_flow/', { params }),
+  getBudgetVsActual: () => api.get('/finance/analytics/budget_vs_actual/'),
+  getNetWorthSummary: (params?: Record<string, string | number>) =>
+    api.get('/finance/analytics/net_worth/', { params }),
+  getHealthScore: (params?: Record<string, string | number>) =>
+    api.get('/finance/analytics/health_score/', { params }),
+  getCategoryHeatmap: (params?: Record<string, string | number>) =>
+    api.get('/finance/analytics/category_heatmap/', { params }),
+  getMonthComparison: () => api.get('/finance/analytics/month_over_month/'),
+  getInvestmentPerformance: () => api.get('/finance/analytics/investment_performance/'),
+  getIncomeStreamTotals: () => api.get('/finance/analytics/income_streams/'),
 
   // Recurring
   getRecurring: () => api.get('/finance/recurring/'),
+  createRecurring: (data: unknown) => api.post('/finance/recurring/', data),
   runRecurringNow: () => api.post('/finance/recurring/run_due/'),
 };
 
