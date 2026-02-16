@@ -214,10 +214,12 @@ export const financeApi = {
   // Categories
   getCategories: () => api.get('/finance/categories/'),
   createCategory: (data: unknown) => api.post('/finance/categories/', data),
+  deleteCategory: (id: string) => api.delete(`/finance/categories/${id}/`),
 
   // Transactions
   getTransactions: (params?: Record<string, string | number>) => api.get('/finance/transactions/', { params }),
   createTransaction: (data: unknown) => api.post('/finance/transactions/', data),
+  deleteTransaction: (id: string) => api.delete(`/finance/transactions/${id}/`),
 
   // Budgets & Goals
   getBudgets: () => api.get('/finance/budgets/'),
@@ -230,11 +232,13 @@ export const financeApi = {
   // Income sources
   getIncomeSources: () => api.get('/finance/income-sources/'),
   createIncomeSource: (data: unknown) => api.post('/finance/income-sources/', data),
+  deleteIncomeSource: (id: string) => api.delete(`/finance/income-sources/${id}/`),
 
   // Investments
   getInvestments: () => api.get('/finance/investments/'),
   createInvestment: (data: unknown) => api.post('/finance/investments/', data),
   updateInvestment: (id: string, data: unknown) => api.patch(`/finance/investments/${id}/`, data),
+  deleteInvestment: (id: string) => api.delete(`/finance/investments/${id}/`),
 
   // Net worth
   getNetWorthSnapshots: () => api.get('/finance/net-worth/'),
@@ -259,6 +263,7 @@ export const financeApi = {
   // Recurring
   getRecurring: () => api.get('/finance/recurring/'),
   createRecurring: (data: unknown) => api.post('/finance/recurring/', data),
+  deleteRecurring: (id: string) => api.delete(`/finance/recurring/${id}/`),
   runRecurringNow: () => api.post('/finance/recurring/run_due/'),
 };
 
