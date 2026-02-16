@@ -4,22 +4,34 @@ import { HabitList } from '../components/habits/HabitList';
 import { HabitCalendar } from '../components/habits/HabitCalendar';
 import { HabitForm } from '../components/habits/HabitForm';
 import { HabitReminders } from '../components/habits/HabitReminders';
+import { HabitAnalyticsDashboard } from '../components/habits/HabitAnalyticsDashboard';
+import { HabitCorrelationMatrix } from '../components/habits/HabitCorrelationMatrix';
+import { HabitChains } from '../components/habits/HabitChains';
+import { HabitTimeOfDayInsights } from '../components/habits/HabitTimeOfDayInsights';
+import { HabitStackManager } from '../components/habits/HabitStackManager';
+import { HabitCategoryManager } from '../components/habits/HabitCategoryManager';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Plus, Target } from 'lucide-react';
-import type { Habit } from '../types/habits';
+import type { Habit, HabitCategory } from '../types/habits';
 
 export function Habits() {
   const [allHabits, setAllHabits] = useState<Habit[]>([]);
+  const [categories, setCategories] = useState<HabitCategory[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
-      const res = await habitApi.getHabits();
-      const data = res.data;
-      setAllHabits(Array.isArray(data) ? data : (data as any).results ?? []);
+      const [habitsRes, categoriesRes] = await Promise.all([
+        habitApi.getHabits(),
+        habitApi.getCategories(),
+      ]);
+      const habitsData = habitsRes.data;
+      const categoriesData = categoriesRes.data;
+      setAllHabits(Array.isArray(habitsData) ? habitsData : (habitsData as any).results ?? []);
+      setCategories(Array.isArray(categoriesData) ? categoriesData : (categoriesData as any).results ?? []);
     } catch (e) {
       console.error('Failed to load habits', e);
     } finally {
@@ -56,6 +68,25 @@ export function Habits() {
     }
   };
 
+  const handleCreateCategory = async (name: string) => {
+    try {
+      await habitApi.createCategory({ name });
+      load();
+    } catch (e) {
+      console.error('Failed to create category', e);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('Delete this category?')) return;
+    try {
+      await habitApi.deleteCategory(id);
+      load();
+    } catch (e) {
+      console.error('Failed to delete category', e);
+    }
+  };
+
   return (
     <div className="p-6 md:p-8 max-w-content mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -87,6 +118,7 @@ export function Habits() {
             <HabitForm
               key={editing?.id ?? 'new'}
               initial={editing ?? undefined}
+              categories={categories}
               onSave={handleSave}
               onCancel={() => {
                 setShowForm(false);
@@ -109,7 +141,10 @@ export function Habits() {
                   <p className="text-caption mt-0.5">
                     {h.frequency === 'weekly'
                       ? `Weekly (${(h.target_weekdays || []).length} days)`
+                      : h.frequency === 'custom'
+                      ? `Every ${h.custom_interval_days ?? '?'} days`
                       : 'Daily'}
+                    {h.category?.name ? ` · ${h.category.name}` : ''}
                     {' · '}
                     Streak {h.current_streak} · Best {h.longest_streak}
                   </p>
@@ -141,7 +176,29 @@ export function Habits() {
         )}
       </section>
 
-      <section>
+      <section className="mb-8">
+        <HabitAnalyticsDashboard />
+      </section>
+
+      <section className="mb-8 grid gap-6 lg:grid-cols-2">
+        <HabitTimeOfDayInsights />
+        <HabitChains />
+      </section>
+
+      <section className="mb-8">
+        <HabitCorrelationMatrix />
+      </section>
+
+      <section className="mb-8 grid gap-6 lg:grid-cols-2">
+        <HabitStackManager habits={allHabits} />
+        <HabitCategoryManager
+          categories={categories}
+          onCreate={handleCreateCategory}
+          onDelete={handleDeleteCategory}
+        />
+      </section>
+
+      <section className="mb-8">
         <h2 className="text-h3 mb-4">Monthly view</h2>
         <HabitCalendar />
       </section>

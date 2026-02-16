@@ -62,14 +62,32 @@ class HabitCompletionSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 
+class HabitCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HabitCategory
+        fields = ['id', 'name']
+        read_only_fields = ['id']
+
+
 class HabitSerializer(serializers.ModelSerializer):
     current_streak = serializers.SerializerMethodField()
     longest_streak = serializers.SerializerMethodField()
     completion_rate = serializers.SerializerMethodField()
     completed_today = serializers.SerializerMethodField()
-    category = serializers.CharField(source='category.name', read_only=True)
+    category = HabitCategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        source='category',
+        queryset=HabitCategory.objects.all(),
+        allow_null=True,
+        required=False,
+        write_only=True,
+    )
     total_completions = serializers.IntegerField(read_only=True)
-    preferred_times = serializers.JSONField(read_only=True)
+    preferred_times = serializers.ListField(
+        child=serializers.IntegerField(min_value=0, max_value=1439),
+        required=False,
+        allow_empty=True,
+    )
 
     class Meta:
         model = Habit
@@ -79,9 +97,21 @@ class HabitSerializer(serializers.ModelSerializer):
             'order', 'is_archived', 'created_at',
             'current_streak', 'longest_streak',
             'completion_rate', 'completed_today',
-            'category', 'total_completions', 'preferred_times',
+            'category', 'category_id', 'total_completions', 'preferred_times',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def validate(self, attrs):
+        frequency = attrs.get('frequency', getattr(self.instance, 'frequency', None))
+        custom_interval_days = attrs.get(
+            'custom_interval_days',
+            getattr(self.instance, 'custom_interval_days', None),
+        )
+        if frequency == 'custom' and not custom_interval_days:
+            raise serializers.ValidationError({'custom_interval_days': 'Required for custom frequency.'})
+        if frequency != 'custom':
+            attrs['custom_interval_days'] = None
+        return attrs
 
     def get_current_streak(self, obj):
         cur, _ = _compute_streaks(obj)
@@ -131,6 +161,7 @@ class HabitReminderSerializer(serializers.ModelSerializer):
 
 
 class HabitStackSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
     previous_name = serializers.CharField(source='previous.name', read_only=True)
     next_name = serializers.CharField(source='next.name', read_only=True)
 
@@ -138,3 +169,16 @@ class HabitStackSerializer(serializers.ModelSerializer):
         model = HabitStack
         fields = ['id', 'user', 'previous', 'previous_name', 'next', 'next_name', 'order', 'gap_minutes']
         read_only_fields = ['id']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        previous = attrs.get('previous')
+        next_habit = attrs.get('next')
+        if previous and next_habit and previous == next_habit:
+            raise serializers.ValidationError('Previous and next habits must be different.')
+        if user:
+            for habit in (previous, next_habit):
+                if habit and habit.user_id != user.id:
+                    raise serializers.ValidationError('Habits must belong to the current user.')
+        return attrs
