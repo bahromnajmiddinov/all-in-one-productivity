@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { notesApi } from '../../api';
+import { MarkdownEditor } from './MarkdownEditor';
 import type { Note, NoteFolder, NoteTag } from '../../types/notes';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 export function NoteEditor({ note, folderId, onSave, onCancel }: Props) {
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
+  const [noteType, setNoteType] = useState(note?.note_type || 'text');
   const [selectedFolder, setSelectedFolder] = useState(note?.folder || folderId || '');
   const [selectedTags, setSelectedTags] = useState<string[]>(note?.tags || []);
   const [folders, setFolders] = useState<NoteFolder[]>([]);
@@ -46,6 +48,7 @@ export function NoteEditor({ note, folderId, onSave, onCancel }: Props) {
       const data = {
         title,
         content,
+        note_type: noteType,
         folder: selectedFolder || undefined,
         tags: selectedTags,
       };
@@ -65,30 +68,59 @@ export function NoteEditor({ note, folderId, onSave, onCancel }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-4">
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Note title..."
-        className="w-full text-lg font-semibold border-b pb-2 mb-4 focus:outline-none focus:border-blue-500"
-      />
-      
-      <div className="flex gap-4 mb-4 flex-wrap">
-        <select
-          value={selectedFolder}
-          onChange={(e) => setSelectedFolder(e.target.value)}
-          className="border rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">No folder</option>
-          {folders.map((folder) => (
-            <option key={folder.id} value={folder.id}>{folder.name}</option>
-          ))}
-        </select>
-        
-        <div className="flex gap-2 flex-wrap">
+    <div className="bg-bg-elevated rounded-xl shadow-sm border border-border overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b border-border bg-bg-subtle">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Note title..."
+          className="w-full text-lg font-semibold bg-transparent border-none focus:outline-none focus:ring-0 placeholder:text-fg-muted"
+        />
+      </div>
+
+      {/* Metadata */}
+      <div className="p-4 border-b border-border space-y-3">
+        <div className="flex flex-wrap gap-3">
+          {/* Note Type */}
+          <select
+            value={noteType}
+            onChange={(e) => setNoteType(e.target.value as any)}
+            className="px-3 py-2 bg-bg-subtle border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          >
+            <option value="text">📝 Text</option>
+            <option value="markdown">✨ Markdown</option>
+            <option value="checklist">☑️ Checklist</option>
+            <option value="code">💻 Code</option>
+            <option value="voice">🎤 Voice</option>
+            <option value="web_clip">🌐 Web Clip</option>
+          </select>
+
+          {/* Folder */}
+          <select
+            value={selectedFolder}
+            onChange={(e) => setSelectedFolder(e.target.value)}
+            className="px-3 py-2 bg-bg-subtle border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          >
+            <option value="">📁 No folder</option>
+            {folders.map((folder) => (
+              <option key={folder.id} value={folder.id}>{folder.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
-            <label key={tag.id} className="flex items-center gap-1 text-sm cursor-pointer">
+            <label
+              key={tag.id}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-colors ${
+                selectedTags.includes(tag.id)
+                  ? 'bg-primary/10 text-primary'
+                  : 'bg-bg-subtle text-fg-subtle hover:bg-bg-subtle/80'
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={selectedTags.includes(tag.id)}
@@ -99,26 +131,50 @@ export function NoteEditor({ note, folderId, onSave, onCancel }: Props) {
                     setSelectedTags(selectedTags.filter((id) => id !== tag.id));
                   }
                 }}
-                className="cursor-pointer"
+                className="sr-only"
               />
-              <span style={{ color: tag.color }}>{tag.name}</span>
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: tag.color }}
+              />
+              {tag.name}
             </label>
           ))}
         </div>
       </div>
-      
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Start writing..."
-        className="w-full h-64 resize-none border rounded p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      
-      <div className="flex justify-end gap-2 mt-4">
+
+      {/* Content Editor */}
+      <div className="p-4">
+        {noteType === 'markdown' ? (
+          <MarkdownEditor
+            value={content}
+            onChange={setContent}
+            placeholder="Start writing in Markdown..."
+            rows={12}
+          />
+        ) : (
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={
+              noteType === 'checklist' 
+                ? '- [ ] Task 1\n- [ ] Task 2' 
+                : noteType === 'code'
+                ? '// Paste your code here'
+                : 'Start writing...'
+            }
+            rows={12}
+            className="w-full px-4 py-3 bg-bg-subtle border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-mono text-sm"
+          />
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3 p-4 border-t border-border bg-bg-subtle">
         {onCancel && (
           <button
             onClick={onCancel}
-            className="px-4 py-2 border rounded hover:bg-gray-50"
+            className="px-4 py-2 border border-border rounded-lg hover:bg-bg-elevated transition-colors"
             disabled={saving}
           >
             Cancel
@@ -126,10 +182,17 @@ export function NoteEditor({ note, folderId, onSave, onCancel }: Props) {
         )}
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-300"
+          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           disabled={saving}
         >
-          {saving ? 'Saving...' : note ? 'Update Note' : 'Create Note'}
+          {saving ? (
+            <>
+              <div className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Saving...
+            </>
+          ) : (
+            note ? 'Update Note' : 'Create Note'
+          )}
         </button>
       </div>
     </div>
