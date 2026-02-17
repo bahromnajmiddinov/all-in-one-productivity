@@ -7,18 +7,57 @@ User = get_user_model()
 
 
 class WaterIntakeSettings(models.Model):
+    UNIT_CHOICES = [
+        ('ml', 'Milliliters'),
+        ('oz', 'Ounces'),
+    ]
+
+    ACTIVITY_LEVELS = [
+        ('low', 'Low'),
+        ('moderate', 'Moderate'),
+        ('high', 'High'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='water_settings')
     daily_goal_ml = models.PositiveIntegerField(default=2500)
+    goal_unit = models.CharField(max_length=2, choices=UNIT_CHOICES, default='ml')
     reminder_enabled = models.BooleanField(default=False)
     reminder_interval = models.PositiveIntegerField(default=60)
+    smart_reminders_enabled = models.BooleanField(default=True)
+    weather_adjustment_enabled = models.BooleanField(default=False)
+    activity_level = models.CharField(max_length=10, choices=ACTIVITY_LEVELS, default='moderate')
+    temperature_c = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.email} water settings"
 
 
+class WaterContainer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='water_containers')
+    name = models.CharField(max_length=100)
+    volume_ml = models.PositiveIntegerField()
+    is_favorite = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-is_favorite', 'name']
+        unique_together = ['user', 'name']
+
+    def __str__(self):
+        return f"{self.name} ({self.volume_ml}ml)"
+
+
 class WaterLog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='water_logs')
+    container = models.ForeignKey(
+        WaterContainer,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='logs',
+    )
     amount_ml = models.PositiveIntegerField()
     logged_at = models.DateTimeField(auto_now_add=True)
     date = models.DateField()

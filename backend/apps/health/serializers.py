@@ -3,6 +3,7 @@ from rest_framework import serializers
 from .models import (
     WaterIntakeSettings,
     WaterLog,
+    WaterContainer,
     SleepLog,
     ExerciseType,
     ExerciseLog,
@@ -11,15 +12,63 @@ from .models import (
 
 
 class WaterIntakeSettingsSerializer(serializers.ModelSerializer):
+    adjusted_goal_ml = serializers.SerializerMethodField()
+
     class Meta:
         model = WaterIntakeSettings
-        fields = ['daily_goal_ml', 'reminder_enabled', 'reminder_interval']
+        fields = [
+            'daily_goal_ml',
+            'goal_unit',
+            'reminder_enabled',
+            'reminder_interval',
+            'smart_reminders_enabled',
+            'weather_adjustment_enabled',
+            'activity_level',
+            'temperature_c',
+            'adjusted_goal_ml',
+        ]
+
+    def get_adjusted_goal_ml(self, obj):
+        if not obj.weather_adjustment_enabled:
+            return obj.daily_goal_ml
+
+        temperature_c = obj.temperature_c
+        if temperature_c is None:
+            return obj.daily_goal_ml
+
+        base_goal = obj.daily_goal_ml
+        temperature_adjustment = max(float(temperature_c) - 20, 0) * 50
+        activity_adjustment = {
+            'low': 0,
+            'moderate': 300,
+            'high': 600,
+        }.get(obj.activity_level, 0)
+
+        return int(base_goal + temperature_adjustment + activity_adjustment)
+
+
+class WaterContainerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WaterContainer
+        fields = ['id', 'name', 'volume_ml', 'is_favorite', 'created_at']
+        read_only_fields = ['id', 'created_at']
 
 
 class WaterLogSerializer(serializers.ModelSerializer):
+    container_name = serializers.CharField(source='container.name', read_only=True)
+    container_volume_ml = serializers.IntegerField(source='container.volume_ml', read_only=True)
+
     class Meta:
         model = WaterLog
-        fields = ['id', 'amount_ml', 'logged_at', 'date']
+        fields = [
+            'id',
+            'container',
+            'container_name',
+            'container_volume_ml',
+            'amount_ml',
+            'logged_at',
+            'date',
+        ]
         read_only_fields = ['id', 'logged_at']
 
 

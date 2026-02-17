@@ -7,6 +7,7 @@ from apps.calendar.views import CalendarEventViewSet, CalendarPreferenceViewSet,
 from apps.health.views import (
     WaterIntakeSettingsViewSet,
     WaterLogViewSet,
+    WaterContainerViewSet,
     SleepLogViewSet,
     ExerciseTypeViewSet,
     ExerciseLogViewSet,
@@ -21,6 +22,7 @@ router.register(r'calendar', CalendarViewSet, basename='calendar')
 router.register(r'calendar/events', CalendarEventViewSet, basename='calendar-event')
 router.register(r'calendar/preferences', CalendarPreferenceViewSet, basename='calendar-preference')
 router.register(r'health/water/settings', WaterIntakeSettingsViewSet, basename='water-settings')
+router.register(r'health/water/containers', WaterContainerViewSet, basename='water-container')
 router.register(r'health/water/logs', WaterLogViewSet, basename='water-log')
 router.register(r'health/sleep', SleepLogViewSet, basename='sleep-log')
 router.register(r'health/exercise/types', ExerciseTypeViewSet, basename='exercise-type')

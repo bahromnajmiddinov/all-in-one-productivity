@@ -3,6 +3,7 @@ import type { CalendarEvent } from './types/calendar';
 import type { Note, NoteFolder, NoteTag, NoteChecklistItem, NoteAttachment, NoteTemplate, WebClipData } from './types/notes';
 import type {
   WaterSettings,
+  WaterContainer,
   SleepLog,
   ExerciseType,
   ExerciseLog,
@@ -280,9 +281,21 @@ export const healthApi = {
   getWaterSettings: () => api.get('/health/water/settings/'),
   updateWaterSettings: (data: Partial<WaterSettings>) => api.put('/health/water/settings/', data),
   getWaterLogs: () => api.get('/health/water/logs/'),
-  addWaterLog: (amount_ml: number) => api.post('/health/water/logs/', { amount_ml }),
+  addWaterLog: (amount_ml: number, container?: string | null) =>
+    api.post('/health/water/logs/', { amount_ml, container }),
   getWaterToday: () => api.get('/health/water/logs/today/'),
   getWaterStats: () => api.get('/health/water/logs/stats/'),
+  getWaterTimeline: () => api.get('/health/water/logs/timeline/'),
+  getWaterTrends: () => api.get('/health/water/logs/trends/'),
+  getWaterStreaks: () => api.get('/health/water/logs/streaks/'),
+  getWaterAnalytics: () => api.get('/health/water/logs/analytics/'),
+  getWaterReminder: () => api.get('/health/water/logs/reminders/'),
+  getWaterCorrelations: () => api.get('/health/water/logs/correlations/'),
+  getWaterContainers: () => api.get<WaterContainer[]>('/health/water/containers/'),
+  createWaterContainer: (data: Partial<WaterContainer>) => api.post('/health/water/containers/', data),
+  updateWaterContainer: (id: string, data: Partial<WaterContainer>) =>
+    api.put(`/health/water/containers/${id}/`, data),
+  deleteWaterContainer: (id: string) => api.delete(`/health/water/containers/${id}/`),
 
   // Sleep
   getSleepLogs: () => api.get('/health/sleep/'),

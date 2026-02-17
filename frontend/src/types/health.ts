@@ -1,11 +1,28 @@
 export interface WaterSettings {
   daily_goal_ml: number;
+  goal_unit: 'ml' | 'oz';
   reminder_enabled: boolean;
   reminder_interval: number;
+  smart_reminders_enabled: boolean;
+  weather_adjustment_enabled: boolean;
+  activity_level: 'low' | 'moderate' | 'high';
+  temperature_c?: number | null;
+  adjusted_goal_ml: number;
+}
+
+export interface WaterContainer {
+  id: string;
+  name: string;
+  volume_ml: number;
+  is_favorite: boolean;
+  created_at: string;
 }
 
 export interface WaterLog {
   id: string;
+  container?: string | null;
+  container_name?: string | null;
+  container_volume_ml?: number | null;
   amount_ml: number;
   logged_at: string;
   date: string;
@@ -17,6 +34,43 @@ export interface WaterDailyStats {
   percentage: number;
   remaining_ml: number;
   logs: WaterLog[];
+}
+
+export interface WaterTimelineEntry {
+  hour: number;
+  total_ml: number;
+}
+
+export interface WaterTrends {
+  weekly_average_ml: number;
+  monthly_average_ml: number;
+}
+
+export interface WaterStreaks {
+  current_streak: number;
+  best_streak: number;
+}
+
+export interface WaterAnalytics {
+  hydration_score: number;
+  days_met_goal: number;
+  average_daily_ml: number;
+}
+
+export interface WaterReminder {
+  interval_minutes: number;
+  next_reminder_at?: string | null;
+}
+
+export interface WaterCorrelationMetric {
+  coefficient: number | null;
+  data_points: number;
+}
+
+export interface WaterCorrelations {
+  mood: WaterCorrelationMetric;
+  energy: WaterCorrelationMetric;
+  productivity: WaterCorrelationMetric;
 }
 
 export interface SleepLog {
