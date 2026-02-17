@@ -18,6 +18,7 @@ import {
   User,
   Sun,
   Moon,
+  Smile,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -29,6 +30,7 @@ const navItems = [
   { to: '/calendar', label: 'Calendar', icon: Calendar },
   { to: '/notes', label: 'Notes', icon: FileText },
   { to: '/journal', label: 'Journal', icon: BookOpen },
+  { to: '/mood', label: 'Mood', icon: Smile },
   { to: '/health', label: 'Health', icon: Heart },
   { to: '/habits', label: 'Habits', icon: Target },
   { to: '/finance', label: 'Finance', icon: CreditCard },

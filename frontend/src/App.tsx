@@ -16,6 +16,7 @@ import { Journal } from './pages/Journal';
 import { JournalEntryDetail } from './pages/JournalEntryDetail';
 import { JournalNewEntry } from './pages/JournalNewEntry';
 import { JournalAnalytics } from './pages/JournalAnalytics';
+import Mood from './pages/Mood';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -50,6 +51,7 @@ function App() {
           <Route path="journal/new" element={<JournalNewEntry />} />
           <Route path="journal/:id" element={<JournalEntryDetail />} />
           <Route path="journal/analytics" element={<JournalAnalytics />} />
+          <Route path="mood" element={<Mood />} />
         </Route>
       </Routes>
     </BrowserRouter>

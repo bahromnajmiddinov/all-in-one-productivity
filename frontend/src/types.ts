@@ -188,3 +188,149 @@ export interface JournalReminder {
   days_until: number;
   created_at: string;
 }
+
+// Mood Tracking Types
+export interface MoodScale {
+  id: string;
+  name: string;
+  scale_type: 'numeric' | 'emoji' | 'descriptive';
+  description: string;
+  min_value: number;
+  max_value: number;
+  scale_labels: Record<string, { label: string; emoji: string }>;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MoodFactor {
+  id: string;
+  category: 'sleep' | 'exercise' | 'social' | 'work' | 'diet' | 'weather' | 'health' | 'productivity' | 'relationships' | 'finances' | 'hobbies' | 'environment' | 'other';
+  category_display: string;
+  name: string;
+  impact: number;
+  rating?: number;
+  notes: string;
+  created_at: string;
+}
+
+export interface Emotion {
+  id: string;
+  primary_emotion: string;
+  primary_emotion_display: string;
+  specific_emotion: string;
+  intensity: 1 | 2 | 3 | 4;
+  intensity_display: string;
+  is_dominant: boolean;
+  created_at: string;
+}
+
+export interface MoodTrigger {
+  id: string;
+  trigger_type: 'event' | 'person' | 'thought' | 'physical' | 'external' | 'internal';
+  trigger_type_display: string;
+  description: string;
+  is_positive: boolean;
+  related_habit?: string;
+  related_task?: string;
+  created_at: string;
+}
+
+export interface MoodEntry {
+  id: string;
+  scale?: string;
+  scale_detail?: MoodScale;
+  mood_value: number;
+  mood_label?: string;
+  mood_emoji?: string;
+  time_of_day: 'morning' | 'afternoon' | 'evening' | 'night' | 'anytime';
+  time_of_day_display: string;
+  entry_date: string;
+  entry_time: string;
+  notes: string;
+  weather: string;
+  location: string;
+  factors: MoodFactor[];
+  emotions: Emotion[];
+  triggers: MoodTrigger[];
+  journal_link_id?: string;
+  has_journal_link?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MoodCorrelation {
+  id: string;
+  correlation_type: 'sleep' | 'exercise' | 'habits' | 'productivity' | 'social' | 'work' | 'weather';
+  correlation_type_display: string;
+  coefficient: number;
+  strength: string;
+  strength_display: string;
+  start_date: string;
+  end_date: string;
+  data_points: number;
+  insights: Record<string, unknown>;
+  computed_at: string;
+}
+
+export interface MoodInsight {
+  id: string;
+  insight_type: 'pattern' | 'suggestion' | 'warning' | 'achievement' | 'correlation' | 'prediction';
+  insight_type_display: string;
+  title: string;
+  description: string;
+  related_entry?: string;
+  confidence: number;
+  action_items: string[];
+  is_dismissed: boolean;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface MoodStats {
+  id: string;
+  total_entries: number;
+  current_streak: number;
+  best_streak: number;
+  avg_mood_7d?: number;
+  avg_mood_30d?: number;
+  avg_mood_90d?: number;
+  mood_distribution: Record<string, number>;
+  time_of_day_averages: Record<string, number>;
+  day_of_week_averages: Record<string, number>;
+  best_mood_date?: string;
+  worst_mood_date?: string;
+  top_emotions: Array<{ emotion: string; count: number }>;
+  top_positive_factors: Array<{ category: string; impact: number }>;
+  top_negative_factors: Array<{ category: string; impact: number }>;
+  updated_at: string;
+}
+
+export interface MoodTimelinePoint {
+  date: string;
+  mood_value: number;
+  rolling_avg_7d?: number;
+  rolling_avg_30d?: number;
+  entry_count: number;
+}
+
+export interface MoodHeatmapPoint {
+  date: string;
+  mood_value: number;
+  color: string;
+  entry_count: number;
+}
+
+export interface MoodPattern {
+  pattern_type: 'weekly' | 'time_of_day' | 'monthly_trend';
+  pattern_data: Record<string, unknown>;
+  insight: string;
+}
+
+export interface EmotionWheelItem {
+  primary_emotion: string;
+  label: string;
+  color: string;
+  related_emotions: string[];
+}
