@@ -104,4 +104,5 @@ urlpatterns = [
     path('api/v1/journal/', include('apps.journal.urls')),
     path('api/v1/mood/', include('apps.mood.urls')),
     path('api/v1/', include('apps.dashboard.urls')),
+    path('api/v1/analytics/', include('apps.analytics.urls')),
 ]

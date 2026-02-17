@@ -71,7 +71,7 @@ class Note(models.Model):
     is_favorite = models.BooleanField(default=False)
     
     # Template source
-    template = models.ForeignKey(NoteTemplate, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_notes')
+    template = models.ForeignKey('NoteTemplate', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_notes')
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
