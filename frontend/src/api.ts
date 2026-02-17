@@ -9,6 +9,16 @@ import type {
   BodyMetrics,
 } from './types/health';
 import type { Habit } from './types/habits';
+import type {
+  JournalTag,
+  JournalMood,
+  JournalPrompt,
+  JournalTemplate,
+  JournalEntry,
+  JournalStreak,
+  JournalStats,
+  JournalReminder,
+} from './types';
 
 const api = axios.create({
   baseURL: 'http://localhost:8000/api/v1',
@@ -352,6 +362,215 @@ export const financeApi = {
   createRecurring: (data: unknown) => api.post('/finance/recurring/', data),
   deleteRecurring: (id: string) => api.delete(`/finance/recurring/${id}/`),
   runRecurringNow: () => api.post('/finance/recurring/run_due/'),
+};
+
+export const journalApi = {
+  // Tags
+  getTags: () => api.get('/journal/tags/'),
+  getPopularTags: () => api.get('/journal/tags/popular/'),
+  createTag: (data: Partial<{ name: string; color: string; icon: string }>) =>
+    api.post('/journal/tags/', data),
+  updateTag: (id: string, data: Partial<{ name: string; color: string; icon: string }>) =>
+    api.put(`/journal/tags/${id}/`, data),
+  deleteTag: (id: string) => api.delete(`/journal/tags/${id}/`),
+
+  // Moods
+  getMoods: (params?: { start_date?: string; end_date?: string }) => api.get('/journal/moods/', { params }),
+  getMood: (id: string) => api.get(`/journal/moods/${id}/`),
+  createMood: (data: Partial<{
+    mood: number;
+    energy_level?: number;
+    stress_level?: number;
+    sleep_quality?: number;
+    notes?: string;
+    date?: string;
+  }>) => api.post('/journal/moods/', data),
+  updateMood: (id: string, data: Partial<{
+    mood: number;
+    energy_level?: number;
+    stress_level?: number;
+    sleep_quality?: number;
+    notes?: string;
+  }>) => api.put(`/journal/moods/${id}/`, data),
+  deleteMood: (id: string) => api.delete(`/journal/moods/${id}/`),
+  getRecentMoods: (days?: number) => api.get('/journal/moods/recent/', { params: days ? { days } : {} }),
+  getMoodTrends: (days?: number) => api.get('/journal/moods/trends/', { params: days ? { days } : {} }),
+  getMoodDistribution: () => api.get('/journal/moods/distribution/'),
+
+  // Prompts
+  getPrompts: (params?: { type?: string; ordering?: string }) =>
+    api.get('/journal/prompts/', { params }),
+  getPrompt: (id: string) => api.get(`/journal/prompts/${id}/`),
+  createPrompt: (data: Partial<{
+    prompt_type: string;
+    question: string;
+    suggestions?: string;
+    tags?: string[];
+    difficulty?: number;
+  }>) => api.post('/journal/prompts/', data),
+  updatePrompt: (id: string, data: Partial<{
+    prompt_type: string;
+    question: string;
+    suggestions?: string;
+    tags?: string[];
+    difficulty?: number;
+  }>) => api.put(`/journal/prompts/${id}/`, data),
+  deletePrompt: (id: string) => api.delete(`/journal/prompts/${id}/`),
+  getRandomPrompt: (type?: string) => api.get('/journal/prompts/random/', { params: type ? { type } : {} }),
+  getDailyPrompt: () => api.get('/journal/prompts/daily/'),
+  getPromptsByType: () => api.get('/journal/prompts/by_type/'),
+
+  // Templates
+  getTemplates: () => api.get('/journal/templates/'),
+  getTemplate: (id: string) => api.get(`/journal/templates/${id}/`),
+  createTemplate: (data: Partial<{
+    name: string;
+    template_type: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    content: string;
+    prompts?: string[];
+    default_tags?: string[];
+    suggest_mood?: boolean;
+  }>) => api.post('/journal/templates/', data),
+  updateTemplate: (id: string, data: Partial<{
+    name: string;
+    template_type: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+    content: string;
+    prompts?: string[];
+    default_tags?: string[];
+    suggest_mood?: boolean;
+  }>) => api.put(`/journal/templates/${id}/`, data),
+  deleteTemplate: (id: string) => api.delete(`/journal/templates/${id}/`),
+  getSystemTemplates: () => api.get('/journal/templates/system/'),
+  useTemplate: (id: string) => api.post(`/journal/templates/${id}/use/`),
+
+  // Entries
+  getEntries: (params?: {
+    favorites?: boolean;
+    start_date?: string;
+    end_date?: string;
+    tag?: string;
+    template?: string;
+    min_mood?: string;
+    max_mood?: string;
+    sentiment?: string;
+    min_words?: string;
+    max_words?: string;
+    search?: string;
+    ordering?: string;
+  }) => api.get('/journal/entries/', { params }),
+  getEntry: (id: string) => api.get(`/journal/entries/${id}/`),
+  createEntry: (data: Partial<{
+    title?: string;
+    content: string;
+    entry_date?: string;
+    tags?: string[];
+    template?: string;
+    prompt?: string;
+    mood?: string;
+    is_favorite?: boolean;
+    is_private?: boolean;
+  }>) => api.post('/journal/entries/', data),
+  updateEntry: (id: string, data: Partial<{
+    title?: string;
+    content: string;
+    entry_date?: string;
+    tags?: string[];
+    template?: string;
+    prompt?: string;
+    mood?: string;
+    is_favorite?: boolean;
+    is_private?: boolean;
+  }>) => api.put(`/journal/entries/${id}/`, data),
+  partialUpdateEntry: (id: string, data: Partial<{
+    title?: string;
+    content: string;
+    entry_date?: string;
+    tags?: string[];
+    template?: string;
+    prompt?: string;
+    mood?: string;
+    is_favorite?: boolean;
+    is_private?: boolean;
+  }>) => api.patch(`/journal/entries/${id}/`, data),
+  deleteEntry: (id: string) => api.delete(`/journal/entries/${id}/`),
+
+  // Entry actions
+  favoriteEntry: (id: string) => api.post(`/journal/entries/${id}/favorite/`),
+
+  // Timeline & Calendar
+  getTimeline: (params?: {
+    start_date?: string;
+    end_date?: string;
+    tag?: string;
+    favorites?: boolean;
+  }) => api.get('/journal/entries/timeline/', { params }),
+  getCalendar: (params?: { start_date?: string; end_date?: string }) =>
+    api.get('/journal/entries/calendar/', { params }),
+  getByDate: (date: string) => api.get('/journal/entries/by_date/', { params: { date } }),
+
+  // Search
+  searchEntries: (params: {
+    q?: string;
+    tags?: string[];
+    start_date?: string;
+    end_date?: string;
+    min_sentiment?: string;
+    max_sentiment?: string;
+    min_words?: string;
+    max_words?: string;
+  }) => api.get('/journal/entries/search/', { params }),
+
+  // Special views
+  getFavorites: () => api.get('/journal/entries/favorites/'),
+  getMemoryLane: (params?: { days_ago?: number; count?: number }) =>
+    api.get('/journal/entries/memory_lane/', { params }),
+  getWordCountTrends: (days?: number) => api.get('/journal/entries/word_count_trends/', { params: days ? { days } : {} }),
+  getSentimentOverview: () => api.get('/journal/entries/sentiment_overview/'),
+
+  // Analytics
+  getAnalytics: () => api.get('/journal/analytics/'),
+  getEntryAnalytics: (id: string) => api.get(`/journal/analytics/${id}/`),
+
+  // Streaks
+  getStreaks: () => api.get('/journal/streaks/'),
+  getMyStreak: () => api.get('/journal/streaks/mine/'),
+  getStreakHeatmap: () => api.get('/journal/streaks/calendar_heatmap/'),
+
+  // Reminders
+  getReminders: () => api.get('/journal/reminders/'),
+  getReminder: (id: string) => api.get(`/journal/reminders/${id}/`),
+  createReminder: (data: Partial<{
+    entry: string;
+    reminder_type: string;
+    next_reminder_date: string;
+    highlight_excerpt?: string;
+    reflection_question?: string;
+  }>) => api.post('/journal/reminders/', data),
+  updateReminder: (id: string, data: Partial<{
+    entry: string;
+    reminder_type: string;
+    next_reminder_date: string;
+    highlight_excerpt?: string;
+    reflection_question?: string;
+  }>) => api.put(`/journal/reminders/${id}/`, data),
+  deleteReminder: (id: string) => api.delete(`/journal/reminders/${id}/`),
+  getUpcomingReminders: () => api.get('/journal/reminders/upcoming/'),
+  getDueReminders: () => api.get('/journal/reminders/due/'),
+  dismissReminder: (id: string) => api.post(`/journal/reminders/${id}/dismiss/`),
+  processDueReminders: () => api.post('/journal/reminders/process_due/'),
+
+  // Stats
+  getStats: () => api.get('/journal/stats/'),
+  getStatsDashboard: () => api.get('/journal/stats/dashboard/'),
+  getConsistency: (days?: number) => api.get('/journal/stats/consistency/', { params: days ? { days } : {} }),
+  getMoodOverTime: (days?: number) => api.get('/journal/stats/mood_over_time/', { params: days ? { days } : {} }),
+  getWritingPatterns: () => api.get('/journal/stats/writing_patterns/'),
 };
 
 export default api;
