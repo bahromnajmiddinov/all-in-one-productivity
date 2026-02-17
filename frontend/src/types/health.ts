@@ -303,3 +303,264 @@ export interface BodyMetrics {
   waist_cm?: number;
   hips_cm?: number;
 }
+
+export interface MuscleGroup {
+  id: string;
+  name: string;
+  display_name: string;
+}
+
+export interface Equipment {
+  id: string;
+  name: string;
+  display_name: string;
+  icon?: string;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  description?: string;
+  instructions?: string;
+  category: 'strength' | 'cardio' | 'flexibility' | 'hiit' | 'plyometric' | 'balance' | 'functional' | 'rehabilitation';
+  category_label?: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  difficulty_label?: string;
+  muscle_groups: string[];
+  muscle_groups_detail?: MuscleGroup[];
+  equipment: string[];
+  equipment_detail?: Equipment[];
+  is_compound: boolean;
+  is_isolation: boolean;
+  default_sets?: number | null;
+  default_reps?: number | null;
+  default_duration_seconds?: number | null;
+  default_rest_seconds?: number | null;
+  image_url?: string;
+  video_url?: string;
+  is_system: boolean;
+  is_favorite: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Workout {
+  id: string;
+  name: string;
+  description?: string;
+  workout_type: 'strength' | 'cardio' | 'hiit' | 'flexibility' | 'mixed' | 'custom';
+  workout_type_label?: string;
+  estimated_duration_minutes?: number | null;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  difficulty_level_label?: string;
+  is_template: boolean;
+  is_favorite: boolean;
+  tags: string[];
+  exercise_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkoutExercise {
+  id: string;
+  workout: string;
+  exercise: string;
+  exercise_name?: string;
+  exercise_category?: string;
+  order: number;
+  sets?: number | null;
+  reps?: number | null;
+  rep_range?: string;
+  duration_seconds?: number | null;
+  distance_m?: number | null;
+  weight_kg?: number | null;
+  rest_seconds: number;
+  notes?: string;
+}
+
+export interface ExerciseSet {
+  id: string;
+  workout_log?: string | null;
+  exercise?: string | null;
+  exercise_name?: string;
+  exercise_type?: string | null;
+  set_number: number;
+  reps?: number | null;
+  weight_kg?: number | null;
+  duration_seconds?: number | null;
+  distance_m?: number | null;
+  rpe?: number | null;
+  heart_rate_bpm?: number | null;
+  calories_burned?: number | null;
+  is_warmup: boolean;
+  is_dropset: boolean;
+  is_failure_set: boolean;
+  notes?: string;
+  completed_at: string;
+  volume?: number;
+}
+
+export interface WorkoutLog {
+  id: string;
+  workout?: string | null;
+  workout_name?: string;
+  name: string;
+  workout_type: 'strength' | 'cardio' | 'hiit' | 'flexibility' | 'mixed' | 'custom';
+  workout_type_label?: string;
+  date: string;
+  start_time: string;
+  end_time?: string | null;
+  duration_minutes?: number | null;
+  duration_hours?: number;
+  intensity?: number | null;
+  calories_burned?: number | null;
+  heart_rate_avg_bpm?: number | null;
+  heart_rate_max_bpm?: number | null;
+  total_sets: number;
+  total_volume_kg: number;
+  total_exercises: number;
+  notes?: string;
+  mood_before?: number | null;
+  mood_after?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkoutPlanWeek {
+  id: string;
+  plan: string;
+  week_number: number;
+  notes?: string;
+}
+
+export interface WorkoutPlanDay {
+  id: string;
+  week: string;
+  day_of_week: number;
+  day_of_week_label?: string;
+  workout?: string | null;
+  workout_name?: string;
+  notes?: string;
+}
+
+export interface WorkoutPlan {
+  id: string;
+  name: string;
+  description?: string;
+  weeks: number;
+  workouts_per_week: number;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_active: boolean;
+  is_completed: boolean;
+  weeks_detail?: WorkoutPlanWeek[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PersonalRecord {
+  id: string;
+  exercise: string;
+  exercise_name?: string;
+  record_type: 'weight' | 'reps' | 'time' | 'distance' | 'volume';
+  record_type_label?: string;
+  weight_kg?: number | null;
+  reps?: number | null;
+  time_seconds?: number | null;
+  distance_m?: number | null;
+  volume_kg?: number | null;
+  date: string;
+  notes?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface FitnessGoal {
+  id: string;
+  title: string;
+  description?: string;
+  goal_type: 'weight_loss' | 'weight_gain' | 'strength' | 'endurance' | 'muscle_mass' | 'body_fat' | 'distance' | 'frequency' | 'custom';
+  goal_type_label?: string;
+  status: 'not_started' | 'in_progress' | 'paused' | 'completed' | 'abandoned';
+  status_label?: string;
+  target_weight_kg?: number | null;
+  target_body_fat_percentage?: number | null;
+  target_distance_km?: number | null;
+  target_strength_value?: string;
+  start_date: string;
+  target_date: string;
+  current_value?: number | null;
+  unit?: string;
+  milestones: number[];
+  is_active: boolean;
+  is_achieved: boolean;
+  progress_percentage?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RestDay {
+  id: string;
+  date: string;
+  reason: 'scheduled' | 'recovery' | 'injury' | 'illness' | 'busy' | 'travel' | 'other';
+  reason_label?: string;
+  other_reason?: string;
+  energy_level?: number | null;
+  muscle_soreness?: number | null;
+  notes?: string;
+  created_at: string;
+}
+
+export interface ExerciseStats {
+  id: string;
+  total_workouts: number;
+  current_streak: number;
+  best_streak: number;
+  total_duration_minutes: number;
+  avg_duration_30d?: number | null;
+  avg_duration_30d_hours?: number | null;
+  avg_duration_90d?: number | null;
+  total_volume_kg: number;
+  avg_volume_30d?: number | null;
+  total_calories_burned: number;
+  last_workout_date?: string | null;
+  last_workout_days_ago?: number | null;
+  exercise_counts: Record<string, number>;
+  muscle_group_balance: Record<string, any>;
+  updated_at: string;
+}
+
+export interface ProgressiveOverload {
+  id: string;
+  exercise: string;
+  exercise_name?: string;
+  baseline_weight_kg?: number | null;
+  baseline_reps?: number | null;
+  baseline_date: string;
+  current_weight_kg?: number | null;
+  current_reps?: number | null;
+  weight_increase_kg: number;
+  rep_increase: number;
+  progress_percentage: number;
+  is_on_track: boolean;
+  updated_at: string;
+}
+
+export interface WorkoutHeatmapEntry {
+  date: string;
+  workout_count: number;
+  total_duration: number;
+  avg_intensity: number | null;
+}
+
+export interface ExerciseVolumeData {
+  date: string;
+  total_volume: number;
+  exercise_count: number;
+}
+
+export interface MuscleGroupBalanceData {
+  muscle_group: string;
+  workout_count: number;
+  percentage: number;
+}

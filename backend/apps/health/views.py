@@ -27,6 +27,21 @@ from .models import (
     ExerciseType,
     ExerciseLog,
     BodyMetrics,
+    MuscleGroup,
+    Equipment,
+    Exercise,
+    Workout,
+    WorkoutExercise,
+    ExerciseSet,
+    WorkoutLog,
+    WorkoutPlan,
+    WorkoutPlanWeek,
+    WorkoutPlanDay,
+    PersonalRecord,
+    FitnessGoal,
+    RestDay,
+    ExerciseStats,
+    ProgressiveOverload,
 )
 from .serializers import (
     WaterIntakeSettingsSerializer,
@@ -43,6 +58,24 @@ from .serializers import (
     ExerciseTypeSerializer,
     ExerciseLogSerializer,
     BodyMetricsSerializer,
+    MuscleGroupSerializer,
+    EquipmentSerializer,
+    ExerciseSerializer,
+    WorkoutSerializer,
+    WorkoutExerciseSerializer,
+    ExerciseSetSerializer,
+    WorkoutLogSerializer,
+    WorkoutPlanSerializer,
+    WorkoutPlanWeekSerializer,
+    WorkoutPlanDaySerializer,
+    PersonalRecordSerializer,
+    FitnessGoalSerializer,
+    RestDaySerializer,
+    ExerciseStatsSerializer,
+    ProgressiveOverloadSerializer,
+    WorkoutHeatmapEntry,
+    ExerciseVolumeData,
+    MuscleGroupBalanceData,
 )
 
 
@@ -856,6 +889,324 @@ class BodyMetricsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return BodyMetrics.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class MuscleGroupViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = MuscleGroupSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return MuscleGroup.objects.all()
+
+
+class EquipmentViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = EquipmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Equipment.objects.all()
+
+
+class ExerciseViewSet(viewsets.ModelViewSet):
+    serializer_class = ExerciseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Exercise.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class WorkoutViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Workout.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class WorkoutExerciseViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutExerciseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkoutExercise.objects.filter(workout__user=self.request.user)
+
+
+class ExerciseSetViewSet(viewsets.ModelViewSet):
+    serializer_class = ExerciseSetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ExerciseSet.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class WorkoutLogViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkoutLog.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+        # Update stats
+        stats, _ = ExerciseStats.objects.get_or_create(user=self.request.user)
+        stats.update_stats()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+        # Update stats
+        stats, _ = ExerciseStats.objects.get_or_create(user=self.request.user)
+        stats.update_stats()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+        # Update stats
+        stats, _ = ExerciseStats.objects.get_or_create(user=self.request.user)
+        stats.update_stats()
+
+    @action(detail=False, methods=['get'])
+    def heatmap(self, request):
+        """Get workout heatmap data for visualization"""
+        days = int(request.query_params.get('days', 90))
+        start_date = timezone.localdate() - timedelta(days=days)
+
+        logs = self.get_queryset().filter(date__gte=start_date).order_by('-date')
+
+        heatmap_data = [
+            {
+                'date': log.date.isoformat(),
+                'workout_count': 1,
+                'total_duration': log.duration_minutes or 0,
+                'avg_intensity': float(log.intensity) if log.intensity else None,
+            }
+            for log in logs
+        ]
+
+        return Response(heatmap_data)
+
+    @action(detail=False, methods=['get'])
+    def volume_over_time(self, request):
+        """Get exercise volume trends over time"""
+        days = int(request.query_params.get('days', 30))
+        start_date = timezone.localdate() - timedelta(days=days)
+
+        logs = self.get_queryset().filter(date__gte=start_date).order_by('date')
+
+        volume_data = [
+            {
+                'date': log.date.isoformat(),
+                'total_volume': float(log.total_volume_kg) if log.total_volume_kg else 0,
+                'exercise_count': log.total_exercises or 0,
+            }
+            for log in logs
+        ]
+
+        return Response(volume_data)
+
+    @action(detail=False, methods=['get'])
+    def muscle_group_balance(self, request):
+        """Get muscle group training balance"""
+        days = int(request.query_params.get('days', 30))
+        start_date = timezone.localdate() - timedelta(days=days)
+
+        sets = ExerciseSet.objects.filter(
+            user=request.user,
+            completed_at__date__gte=start_date
+        ).select_related('exercise')
+
+        muscle_counts = {}
+        total_sets = sets.count()
+
+        for exercise_set in sets:
+            if exercise_set.exercise:
+                for muscle in exercise_set.exercise.muscle_groups.all():
+                    muscle_counts[muscle.display_name] = muscle_counts.get(muscle.display_name, 0) + 1
+
+        balance_data = [
+            {
+                'muscle_group': muscle,
+                'workout_count': count,
+                'percentage': round((count / total_sets * 100), 2) if total_sets > 0 else 0,
+            }
+            for muscle, count in muscle_counts.items()
+        ]
+
+        return Response(balance_data)
+
+
+class WorkoutPlanViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutPlanSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkoutPlan.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """Activate a workout plan"""
+        plan = self.get_object()
+        plan.is_active = True
+        plan.save()
+
+        # Deactivate other plans
+        WorkoutPlan.objects.filter(user=request.user).exclude(pk=plan.pk).update(is_active=False)
+
+        return Response({'status': 'activated'})
+
+    @action(detail=True, methods=['post'])
+    def complete(self, request, pk=None):
+        """Mark a workout plan as completed"""
+        plan = self.get_object()
+        plan.is_completed = True
+        plan.is_active = False
+        plan.save()
+
+        return Response({'status': 'completed'})
+
+
+class WorkoutPlanWeekViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutPlanWeekSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkoutPlanWeek.objects.filter(plan__user=self.request.user)
+
+
+class WorkoutPlanDayViewSet(viewsets.ModelViewSet):
+    serializer_class = WorkoutPlanDaySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkoutPlanDay.objects.filter(week__plan__user=self.request.user)
+
+
+class PersonalRecordViewSet(viewsets.ModelViewSet):
+    serializer_class = PersonalRecordSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return PersonalRecord.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def by_exercise(self, request):
+        """Get personal records grouped by exercise"""
+        records = self.get_queryset().filter(is_active=True).select_related('exercise')
+
+        grouped = {}
+        for record in records:
+            exercise_id = str(record.exercise.id)
+            if exercise_id not in grouped:
+                grouped[exercise_id] = {
+                    'exercise_id': exercise_id,
+                    'exercise_name': record.exercise.name,
+                    'records': [],
+                }
+            grouped[exercise_id]['records'].append(PersonalRecordSerializer(record).data)
+
+        return Response(list(grouped.values()))
+
+
+class FitnessGoalViewSet(viewsets.ModelViewSet):
+    serializer_class = FitnessGoalSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return FitnessGoal.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def update_progress(self, request, pk=None):
+        """Update progress for a fitness goal"""
+        goal = self.get_object()
+        current_value = request.data.get('current_value')
+
+        if current_value is not None:
+            goal.current_value = current_value
+            goal.status = 'in_progress'
+
+            # Check if goal is achieved
+            if goal.goal_type == 'weight_loss' and goal.target_weight_kg:
+                if goal.current_value <= goal.target_weight_kg:
+                    goal.is_achieved = True
+                    goal.status = 'completed'
+            elif goal.goal_type == 'weight_gain' and goal.target_weight_kg:
+                if goal.current_value >= goal.target_weight_kg:
+                    goal.is_achieved = True
+                    goal.status = 'completed'
+
+            goal.save()
+
+        return Response(FitnessGoalSerializer(goal).data)
+
+    @action(detail=False, methods=['get'])
+    def active(self, request):
+        """Get active fitness goals"""
+        goals = self.get_queryset().filter(is_active=True)
+        serializer = self.get_serializer(goals, many=True)
+        return Response(serializer.data)
+
+
+class RestDayViewSet(viewsets.ModelViewSet):
+    serializer_class = RestDaySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return RestDay.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class ExerciseStatsViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ExerciseStatsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ExerciseStats.objects.filter(user=self.request.user)
+
+    def get_object(self):
+        obj, _ = ExerciseStats.objects.get_or_create(user=self.request.user)
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    @action(detail=False, methods=['post'])
+    def refresh(self, request):
+        """Manually refresh exercise statistics"""
+        stats, _ = ExerciseStats.objects.get_or_create(user=request.user)
+        stats.update_stats()
+        serializer = self.get_serializer(stats)
+        return Response(serializer.data)
+
+
+class ProgressiveOverloadViewSet(viewsets.ModelViewSet):
+    serializer_class = ProgressiveOverloadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return ProgressiveOverload.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

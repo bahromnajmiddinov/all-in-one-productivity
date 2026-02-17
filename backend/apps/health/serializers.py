@@ -16,6 +16,21 @@ from .models import (
     ExerciseType,
     ExerciseLog,
     BodyMetrics,
+    MuscleGroup,
+    Equipment,
+    Exercise,
+    Workout,
+    WorkoutExercise,
+    ExerciseSet,
+    WorkoutLog,
+    WorkoutPlan,
+    WorkoutPlanWeek,
+    WorkoutPlanDay,
+    PersonalRecord,
+    FitnessGoal,
+    RestDay,
+    ExerciseStats,
+    ProgressiveOverload,
 )
 
 
@@ -426,3 +441,378 @@ class BodyMetricsSerializer(serializers.ModelSerializer):
         if previous and obj.weight_kg:
             return round(obj.weight_kg - previous.weight_kg, 2)
         return None
+
+
+class MuscleGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MuscleGroup
+        fields = ['id', 'name', 'display_name']
+        read_only_fields = ['id']
+
+
+class EquipmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Equipment
+        fields = ['id', 'name', 'display_name', 'icon']
+        read_only_fields = ['id']
+
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    category_label = serializers.CharField(source='get_category_display', read_only=True)
+    difficulty_label = serializers.CharField(source='get_difficulty_display', read_only=True)
+    muscle_groups_detail = MuscleGroupSerializer(source='muscle_groups', many=True, read_only=True)
+    equipment_detail = EquipmentSerializer(source='equipment', many=True, read_only=True)
+
+    class Meta:
+        model = Exercise
+        fields = [
+            'id',
+            'name',
+            'description',
+            'instructions',
+            'category',
+            'category_label',
+            'difficulty',
+            'difficulty_label',
+            'muscle_groups',
+            'muscle_groups_detail',
+            'equipment',
+            'equipment_detail',
+            'is_compound',
+            'is_isolation',
+            'default_sets',
+            'default_reps',
+            'default_duration_seconds',
+            'default_rest_seconds',
+            'image_url',
+            'video_url',
+            'is_system',
+            'is_favorite',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class WorkoutSerializer(serializers.ModelSerializer):
+    workout_type_label = serializers.CharField(source='get_workout_type_display', read_only=True)
+    difficulty_level_label = serializers.CharField(source='get_difficulty_level_display', read_only=True)
+    exercise_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Workout
+        fields = [
+            'id',
+            'name',
+            'description',
+            'workout_type',
+            'workout_type_label',
+            'estimated_duration_minutes',
+            'difficulty_level',
+            'difficulty_level_label',
+            'is_template',
+            'is_favorite',
+            'tags',
+            'exercise_count',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def get_exercise_count(self, obj):
+        return obj.workout_exercises.count()
+
+
+class WorkoutExerciseSerializer(serializers.ModelSerializer):
+    exercise_name = serializers.CharField(source='exercise.name', read_only=True)
+    exercise_category = serializers.CharField(source='exercise.category', read_only=True)
+
+    class Meta:
+        model = WorkoutExercise
+        fields = [
+            'id',
+            'workout',
+            'exercise',
+            'exercise_name',
+            'exercise_category',
+            'order',
+            'sets',
+            'reps',
+            'rep_range',
+            'duration_seconds',
+            'distance_m',
+            'weight_kg',
+            'rest_seconds',
+            'notes',
+        ]
+
+
+class ExerciseSetSerializer(serializers.ModelSerializer):
+    exercise_name = serializers.CharField(source='exercise.name', read_only=True)
+    volume = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ExerciseSet
+        fields = [
+            'id',
+            'workout_log',
+            'exercise',
+            'exercise_name',
+            'exercise_type',
+            'set_number',
+            'reps',
+            'weight_kg',
+            'duration_seconds',
+            'distance_m',
+            'rpe',
+            'heart_rate_bpm',
+            'calories_burned',
+            'is_warmup',
+            'is_dropset',
+            'is_failure_set',
+            'notes',
+            'completed_at',
+            'volume',
+        ]
+        read_only_fields = ['id', 'completed_at']
+
+    def get_volume(self, obj):
+        return obj.calculate_volume()
+
+
+class WorkoutLogSerializer(serializers.ModelSerializer):
+    workout_name = serializers.CharField(source='workout.name', read_only=True)
+    workout_type_label = serializers.CharField(source='get_workout_type_display', read_only=True)
+    duration_hours = serializers.SerializerMethodField()
+
+    class Meta:
+        model = WorkoutLog
+        fields = [
+            'id',
+            'workout',
+            'workout_name',
+            'name',
+            'workout_type',
+            'workout_type_label',
+            'date',
+            'start_time',
+            'end_time',
+            'duration_minutes',
+            'duration_hours',
+            'intensity',
+            'calories_burned',
+            'heart_rate_avg_bpm',
+            'heart_rate_max_bpm',
+            'total_sets',
+            'total_volume_kg',
+            'total_exercises',
+            'notes',
+            'mood_before',
+            'mood_after',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'duration_minutes']
+
+    def get_duration_hours(self, obj):
+        return round(obj.duration_minutes / 60, 1) if obj.duration_minutes else 0
+
+
+class WorkoutPlanWeekSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkoutPlanWeek
+        fields = ['id', 'plan', 'week_number', 'notes']
+        read_only_fields = ['id']
+
+
+class WorkoutPlanDaySerializer(serializers.ModelSerializer):
+    day_of_week_label = serializers.CharField(source='get_day_of_week_display', read_only=True)
+    workout_name = serializers.CharField(source='workout.name', read_only=True)
+
+    class Meta:
+        model = WorkoutPlanDay
+        fields = ['id', 'week', 'day_of_week', 'day_of_week_label', 'workout', 'workout_name', 'notes']
+        read_only_fields = ['id']
+
+
+class WorkoutPlanSerializer(serializers.ModelSerializer):
+    weeks_detail = WorkoutPlanWeekSerializer(source='weeks', many=True, read_only=True)
+
+    class Meta:
+        model = WorkoutPlan
+        fields = [
+            'id',
+            'name',
+            'description',
+            'weeks',
+            'workouts_per_week',
+            'start_date',
+            'end_date',
+            'is_active',
+            'is_completed',
+            'weeks_detail',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class PersonalRecordSerializer(serializers.ModelSerializer):
+    exercise_name = serializers.CharField(source='exercise.name', read_only=True)
+    record_type_label = serializers.CharField(source='get_record_type_display', read_only=True)
+
+    class Meta:
+        model = PersonalRecord
+        fields = [
+            'id',
+            'exercise',
+            'exercise_name',
+            'record_type',
+            'record_type_label',
+            'weight_kg',
+            'reps',
+            'time_seconds',
+            'distance_m',
+            'volume_kg',
+            'date',
+            'notes',
+            'is_active',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class FitnessGoalSerializer(serializers.ModelSerializer):
+    goal_type_label = serializers.CharField(source='get_goal_type_display', read_only=True)
+    status_label = serializers.CharField(source='get_status_display', read_only=True)
+    progress_percentage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FitnessGoal
+        fields = [
+            'id',
+            'title',
+            'description',
+            'goal_type',
+            'goal_type_label',
+            'status',
+            'status_label',
+            'target_weight_kg',
+            'target_body_fat_percentage',
+            'target_distance_km',
+            'target_strength_value',
+            'start_date',
+            'target_date',
+            'current_value',
+            'unit',
+            'milestones',
+            'is_active',
+            'is_achieved',
+            'progress_percentage',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'progress_percentage']
+
+    def get_progress_percentage(self, obj):
+        if obj.goal_type == 'weight_loss' and obj.target_weight_kg:
+            baseline = obj.milestones[0] if obj.milestones else obj.current_value
+            if baseline and obj.target_weight_kg:
+                return round(((baseline - obj.current_value) / (baseline - obj.target_weight_kg)) * 100, 2) if baseline != obj.target_weight_kg else 100
+        return 0
+
+
+class RestDaySerializer(serializers.ModelSerializer):
+    reason_label = serializers.CharField(source='get_reason_display', read_only=True)
+
+    class Meta:
+        model = RestDay
+        fields = [
+            'id',
+            'date',
+            'reason',
+            'reason_label',
+            'other_reason',
+            'energy_level',
+            'muscle_soreness',
+            'notes',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class ExerciseStatsSerializer(serializers.ModelSerializer):
+    avg_duration_30d_hours = serializers.SerializerMethodField()
+    last_workout_days_ago = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ExerciseStats
+        fields = [
+            'id',
+            'total_workouts',
+            'current_streak',
+            'best_streak',
+            'total_duration_minutes',
+            'avg_duration_30d',
+            'avg_duration_30d_hours',
+            'avg_duration_90d',
+            'total_volume_kg',
+            'avg_volume_30d',
+            'total_calories_burned',
+            'last_workout_date',
+            'last_workout_days_ago',
+            'exercise_counts',
+            'muscle_group_balance',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'updated_at']
+
+    def get_avg_duration_30d_hours(self, obj):
+        return round(obj.avg_duration_30d / 60, 1) if obj.avg_duration_30d else None
+
+    def get_last_workout_days_ago(self, obj):
+        if obj.last_workout_date:
+            return (timezone.now().date() - obj.last_workout_date).days
+        return None
+
+
+class ProgressiveOverloadSerializer(serializers.ModelSerializer):
+    exercise_name = serializers.CharField(source='exercise.name', read_only=True)
+
+    class Meta:
+        model = ProgressiveOverload
+        fields = [
+            'id',
+            'exercise',
+            'exercise_name',
+            'baseline_weight_kg',
+            'baseline_reps',
+            'baseline_date',
+            'current_weight_kg',
+            'current_reps',
+            'weight_increase_kg',
+            'rep_increase',
+            'progress_percentage',
+            'is_on_track',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'updated_at']
+
+
+class WorkoutHeatmapEntry(serializers.Serializer):
+    date = serializers.DateField()
+    workout_count = serializers.IntegerField()
+    total_duration = serializers.IntegerField()
+    avg_intensity = serializers.FloatField()
+
+
+class ExerciseVolumeData(serializers.Serializer):
+    date = serializers.DateField()
+    total_volume = serializers.FloatField()
+    exercise_count = serializers.IntegerField()
+
+
+class MuscleGroupBalanceData(serializers.Serializer):
+    muscle_group = serializers.CharField()
+    workout_count = serializers.IntegerField()
+    percentage = serializers.FloatField()

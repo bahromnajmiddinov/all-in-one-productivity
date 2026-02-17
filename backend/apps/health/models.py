@@ -620,3 +620,570 @@ class BodyMetrics(models.Model):
 
     class Meta:
         ordering = ['-date']
+
+
+class MuscleGroup(models.Model):
+    MUSCLE_GROUPS = [
+        ('chest', 'Chest'),
+        ('back', 'Back'),
+        ('shoulders', 'Shoulders'),
+        ('biceps', 'Biceps'),
+        ('triceps', 'Triceps'),
+        ('forearms', 'Forearms'),
+        ('abs', 'Abs/Core'),
+        ('quads', 'Quadriceps'),
+        ('hamstrings', 'Hamstrings'),
+        ('calves', 'Calves'),
+        ('glutes', 'Glutes'),
+        ('traps', 'Trapezius'),
+        ('lats', 'Lats'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, unique=True, choices=MUSCLE_GROUPS)
+    display_name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.display_name
+
+
+class Equipment(models.Model):
+    EQUIPMENT_TYPES = [
+        ('none', 'None (Bodyweight)'),
+        ('dumbbells', 'Dumbbells'),
+        ('barbell', 'Barbell'),
+        ('kettlebell', 'Kettlebell'),
+        ('cables', 'Cables/Machines'),
+        ('resistance_bands', 'Resistance Bands'),
+        ('pull_up_bar', 'Pull-up Bar'),
+        ('bench', 'Bench'),
+        ('medicine_ball', 'Medicine Ball'),
+        ('stability_ball', 'Stability Ball'),
+        ('foam_roller', 'Foam Roller'),
+        ('treadmill', 'Treadmill'),
+        ('bike', 'Exercise Bike'),
+        ('rowing_machine', 'Rowing Machine'),
+        ('elliptical', 'Elliptical'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, unique=True, choices=EQUIPMENT_TYPES)
+    display_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=50, blank=True)
+
+    def __str__(self):
+        return self.display_name
+
+
+class Exercise(models.Model):
+    EXERCISE_CATEGORIES = [
+        ('strength', 'Strength Training'),
+        ('cardio', 'Cardio'),
+        ('flexibility', 'Flexibility/Mobility'),
+        ('hiit', 'HIIT'),
+        ('plyometric', 'Plyometric'),
+        ('balance', 'Balance/Stability'),
+        ('functional', 'Functional Training'),
+        ('rehabilitation', 'Rehabilitation'),
+    ]
+
+    DIFFICULTY_LEVELS = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exercises')
+
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    instructions = models.TextField(blank=True, help_text="Step-by-step instructions")
+
+    category = models.CharField(max_length=50, choices=EXERCISE_CATEGORIES)
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_LEVELS, default='intermediate')
+
+    muscle_groups = models.ManyToManyField(MuscleGroup, related_name='exercises')
+    equipment = models.ManyToManyField(Equipment, related_name='exercises', blank=True)
+
+    is_compound = models.BooleanField(default=False, help_text="Multi-joint exercise")
+    is_isolation = models.BooleanField(default=False, help_text="Single-joint exercise")
+
+    # Optional fields for tracking
+    default_sets = models.PositiveSmallIntegerField(null=True, blank=True)
+    default_reps = models.PositiveSmallIntegerField(null=True, blank=True)
+    default_duration_seconds = models.PositiveSmallIntegerField(null=True, blank=True)
+    default_rest_seconds = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    # Media
+    image_url = models.URLField(blank=True)
+    video_url = models.URLField(blank=True)
+
+    # System vs Custom
+    is_system = models.BooleanField(default=False, help_text="Pre-built system exercise")
+    is_favorite = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['category', 'name']
+        unique_together = ['user', 'name']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_category_display()})"
+
+
+class Workout(models.Model):
+    WORKOUT_TYPES = [
+        ('strength', 'Strength Training'),
+        ('cardio', 'Cardio'),
+        ('hiit', 'HIIT'),
+        ('flexibility', 'Flexibility'),
+        ('mixed', 'Mixed'),
+        ('custom', 'Custom'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workouts')
+
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    workout_type = models.CharField(max_length=50, choices=WORKOUT_TYPES, default='custom')
+
+    estimated_duration_minutes = models.PositiveIntegerField(null=True, blank=True)
+    difficulty_level = models.CharField(max_length=20, choices=Exercise.DIFFICULTY_LEVELS, default='intermediate')
+
+    is_template = models.BooleanField(default=False, help_text="If True, this is a reusable template")
+    is_favorite = models.BooleanField(default=False)
+
+    # Tags
+    tags = models.JSONField(default=list, blank=True, help_text="List of tags for filtering")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Workout'
+
+    def __str__(self):
+        return self.name
+
+
+class WorkoutExercise(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workout = models.ForeignKey(Workout, on_delete=models.CASCADE, related_name='workout_exercises')
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name='workout_exercises')
+
+    order = models.PositiveSmallIntegerField(default=0, help_text="Order within the workout")
+
+    # Exercise parameters
+    sets = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Number of sets")
+    reps = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Reps per set")
+    rep_range = models.CharField(max_length=20, blank=True, help_text="e.g., '8-12'")
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True, help_text="For cardio/timed exercises")
+    distance_m = models.PositiveIntegerField(null=True, blank=True, help_text="For cardio exercises")
+    weight_kg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    rest_seconds = models.PositiveSmallIntegerField(default=60, help_text="Rest time after this exercise")
+
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['order']
+        unique_together = ['workout', 'exercise']
+
+    def __str__(self):
+        return f"{self.workout.name} - {self.exercise.name}"
+
+
+class ExerciseSet(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='exercise_sets')
+
+    # Link to completed workout session
+    workout_log = models.ForeignKey('WorkoutLog', on_delete=models.CASCADE, related_name='exercise_sets', null=True, blank=True)
+
+    # Reference to exercise
+    exercise = models.ForeignKey(Exercise, on_delete=models.SET_NULL, null=True, blank=True)
+    exercise_type = models.ForeignKey(ExerciseType, on_delete=models.SET_NULL, null=True, blank=True)
+
+    set_number = models.PositiveSmallIntegerField()
+
+    # Performance data
+    reps = models.PositiveIntegerField(null=True, blank=True)
+    weight_kg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    distance_m = models.PositiveIntegerField(null=True, blank=True)
+
+    # Additional metrics
+    rpe = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Rate of Perceived Exertion (1-10)")
+    heart_rate_bpm = models.PositiveSmallIntegerField(null=True, blank=True)
+    calories_burned = models.PositiveIntegerField(null=True, blank=True)
+
+    is_warmup = models.BooleanField(default=False)
+    is_dropset = models.BooleanField(default=False)
+    is_failure_set = models.BooleanField(default=False)
+
+    notes = models.TextField(blank=True)
+
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-completed_at']
+
+    def calculate_volume(self):
+        """Calculate volume for strength training (sets × reps × weight)"""
+        if self.reps and self.weight_kg:
+            return float(self.reps * self.weight_kg)
+        return 0
+
+
+class WorkoutLog(models.Model):
+    INTENSITY_RATINGS = [(i, str(i)) for i in range(1, 11)]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workout_logs')
+
+    # Link to workout template if used
+    workout = models.ForeignKey(Workout, on_delete=models.SET_NULL, null=True, blank=True, related_name='logs')
+
+    name = models.CharField(max_length=200)
+    workout_type = models.CharField(max_length=50, choices=Workout.WORKOUT_TYPES)
+
+    date = models.DateField()
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    duration_minutes = models.PositiveIntegerField(null=True, blank=True)
+
+    # Metrics
+    intensity = models.PositiveSmallIntegerField(choices=INTENSITY_RATINGS, null=True, blank=True)
+    calories_burned = models.PositiveIntegerField(null=True, blank=True)
+    heart_rate_avg_bpm = models.PositiveSmallIntegerField(null=True, blank=True)
+    heart_rate_max_bpm = models.PositiveSmallIntegerField(null=True, blank=True)
+
+    # Totals
+    total_sets = models.PositiveIntegerField(default=0)
+    total_volume_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Total weight lifted")
+    total_exercises = models.PositiveSmallIntegerField(default=0)
+
+    notes = models.TextField(blank=True)
+    mood_before = models.PositiveSmallIntegerField(null=True, blank=True, help_text="1-10 before workout")
+    mood_after = models.PositiveSmallIntegerField(null=True, blank=True, help_text="1-10 after workout")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', '-start_time']
+        indexes = [
+            models.Index(fields=['user', '-date']),
+            models.Index(fields=['date']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.end_time and self.start_time and not self.duration_minutes:
+            self.duration_minutes = int((self.end_time - self.start_time).total_seconds() / 60)
+        super().save(*args, **kwargs)
+
+
+class WorkoutPlan(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workout_plans')
+
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+
+    # Duration
+    weeks = models.PositiveSmallIntegerField(help_text="Number of weeks in the plan")
+    workouts_per_week = models.PositiveSmallIntegerField(default=3)
+
+    # Schedule
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+
+    is_active = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Workout Plan'
+
+    def __str__(self):
+        return f"{self.name} ({self.weeks} weeks)"
+
+
+class WorkoutPlanWeek(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    plan = models.ForeignKey(WorkoutPlan, on_delete=models.CASCADE, related_name='weeks')
+    week_number = models.PositiveSmallIntegerField()
+
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['week_number']
+        unique_together = ['plan', 'week_number']
+
+    def __str__(self):
+        return f"{self.plan.name} - Week {self.week_number}"
+
+
+class WorkoutPlanDay(models.Model):
+    DAY_NAMES = [
+        (1, 'Monday'),
+        (2, 'Tuesday'),
+        (3, 'Wednesday'),
+        (4, 'Thursday'),
+        (5, 'Friday'),
+        (6, 'Saturday'),
+        (7, 'Sunday'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    week = models.ForeignKey(WorkoutPlanWeek, on_delete=models.CASCADE, related_name='days')
+    day_of_week = models.PositiveSmallIntegerField(choices=DAY_NAMES)
+
+    # Link to workout template for this day
+    workout = models.ForeignKey(Workout, on_delete=models.SET_NULL, null=True, blank=True, related_name='plan_days')
+
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['day_of_week']
+        unique_together = ['week', 'day_of_week']
+
+    def __str__(self):
+        return f"Week {self.week.week_number} - {self.get_day_of_week_display()}"
+
+
+class PersonalRecord(models.Model):
+    RECORD_TYPES = [
+        ('weight', 'Heaviest Weight'),
+        ('reps', 'Most Reps'),
+        ('time', 'Fastest Time'),
+        ('distance', 'Longest Distance'),
+        ('volume', 'Highest Volume'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='personal_records')
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name='personal_records')
+
+    record_type = models.CharField(max_length=20, choices=RECORD_TYPES)
+
+    # Record value
+    weight_kg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    reps = models.PositiveIntegerField(null=True, blank=True)
+    time_seconds = models.PositiveIntegerField(null=True, blank=True)
+    distance_m = models.PositiveIntegerField(null=True, blank=True)
+    volume_kg = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    # When achieved
+    date = models.DateField()
+    exercise_set = models.ForeignKey(ExerciseSet, on_delete=models.SET_NULL, null=True, blank=True)
+
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True, help_text="False if beaten by a newer record")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+        unique_together = ['user', 'exercise', 'record_type']
+
+    def __str__(self):
+        return f"{self.exercise.name} - {self.get_record_type_display()} - {self.date}"
+
+
+class FitnessGoal(models.Model):
+    GOAL_TYPES = [
+        ('weight_loss', 'Weight Loss'),
+        ('weight_gain', 'Weight Gain'),
+        ('strength', 'Strength'),
+        ('endurance', 'Endurance'),
+        ('muscle_mass', 'Muscle Mass'),
+        ('body_fat', 'Body Fat Percentage'),
+        ('distance', 'Running/Cycling Distance'),
+        ('frequency', 'Workout Frequency'),
+        ('custom', 'Custom Goal'),
+    ]
+
+    STATUS_CHOICES = [
+        ('not_started', 'Not Started'),
+        ('in_progress', 'In Progress'),
+        ('paused', 'Paused'),
+        ('completed', 'Completed'),
+        ('abandoned', 'Abandoned'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fitness_goals')
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+
+    goal_type = models.CharField(max_length=50, choices=GOAL_TYPES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
+
+    # Target values
+    target_weight_kg = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    target_body_fat_percentage = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+    target_distance_km = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    target_strength_value = models.CharField(max_length=100, blank=True, help_text="e.g., 'Bench Press 100kg'")
+
+    # Progress tracking
+    start_date = models.DateField()
+    target_date = models.DateField()
+    current_value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    unit = models.CharField(max_length=20, blank=True, help_text="Unit of measurement")
+
+    # Milestones
+    milestones = models.JSONField(default=list, blank=True, help_text="List of milestone values")
+
+    is_active = models.BooleanField(default=True)
+    is_achieved = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Fitness Goal'
+
+    def __str__(self):
+        return f"{self.title} - {self.get_status_display()}"
+
+
+class RestDay(models.Model):
+    REASONS = [
+        ('scheduled', 'Scheduled Rest'),
+        ('recovery', 'Recovery Needed'),
+        ('injury', 'Injury'),
+        ('illness', 'Illness'),
+        ('busy', 'Too Busy'),
+        ('travel', 'Traveling'),
+        ('other', 'Other'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rest_days')
+
+    date = models.DateField()
+    reason = models.CharField(max_length=20, choices=REASONS)
+    other_reason = models.CharField(max_length=200, blank=True)
+
+    # How are you feeling?
+    energy_level = models.PositiveSmallIntegerField(null=True, blank=True, help_text="1-10 energy level")
+    muscle_soreness = models.PositiveSmallIntegerField(null=True, blank=True, help_text="1-10 soreness level")
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date']
+        unique_together = ['user', 'date']
+
+    def __str__(self):
+        return f"{self.date} - {self.get_reason_display()}"
+
+
+class ExerciseStats(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='exercise_stats')
+
+    # Workout counts
+    total_workouts = models.PositiveIntegerField(default=0)
+    current_streak = models.PositiveIntegerField(default=0)
+    best_streak = models.PositiveIntegerField(default=0)
+
+    # Duration stats
+    total_duration_minutes = models.PositiveIntegerField(default=0)
+    avg_duration_30d = models.PositiveIntegerField(null=True, blank=True)
+    avg_duration_90d = models.PositiveIntegerField(null=True, blank=True)
+
+    # Volume stats
+    total_volume_kg = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    avg_volume_30d = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    # Calories
+    total_calories_burned = models.PositiveIntegerField(default=0)
+
+    # Last workout
+    last_workout_date = models.DateField(null=True, blank=True)
+
+    # Exercise breakdown
+    exercise_counts = models.JSONField(default=dict, blank=True)
+    muscle_group_balance = models.JSONField(default=dict, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = 'Exercise Stats'
+
+    def __str__(self):
+        return f"Exercise stats for {self.user.email}"
+
+    def update_stats(self):
+        from django.db.models import Sum, Count, Avg
+
+        logs = WorkoutLog.objects.filter(user=self.user)
+        self.total_workouts = logs.count()
+
+        last_30_days = timezone.now().date() - timedelta(days=30)
+        recent_logs = logs.filter(date__gte=last_30_days)
+
+        if recent_logs.exists():
+            self.avg_duration_30d = recent_logs.aggregate(avg=Avg('duration_minutes'))['avg']
+
+        self.total_calories_burned = logs.aggregate(total=Sum('calories_burned'))['total'] or 0
+
+        last_log = logs.order_by('-date').first()
+        if last_log:
+            self.last_workout_date = last_log.date
+
+        # Calculate streak
+        streak = 0
+        check_date = timezone.now().date()
+        while logs.filter(date=check_date).exists():
+            streak += 1
+            check_date -= timedelta(days=1)
+        self.current_streak = streak
+        self.best_streak = max(self.best_streak, streak)
+
+        self.save()
+
+
+class ProgressiveOverload(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='progressive_overloads')
+
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE, related_name='progressive_overloads')
+
+    # Baseline
+    baseline_weight_kg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    baseline_reps = models.PositiveIntegerField(null=True, blank=True)
+    baseline_date = models.DateField()
+
+    # Current
+    current_weight_kg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    current_reps = models.PositiveIntegerField(null=True, blank=True)
+
+    # Progress
+    weight_increase_kg = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    rep_increase = models.PositiveIntegerField(default=0)
+    progress_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    is_on_track = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        unique_together = ['user', 'exercise']
+
+    def __str__(self):
+        return f"{self.exercise.name} - {self.progress_percentage}%"

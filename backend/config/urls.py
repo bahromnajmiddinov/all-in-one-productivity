@@ -18,6 +18,21 @@ from apps.health.views import (
     ExerciseTypeViewSet,
     ExerciseLogViewSet,
     BodyMetricsViewSet,
+    MuscleGroupViewSet,
+    EquipmentViewSet,
+    ExerciseViewSet,
+    WorkoutViewSet,
+    WorkoutExerciseViewSet,
+    ExerciseSetViewSet,
+    WorkoutLogViewSet,
+    WorkoutPlanViewSet,
+    WorkoutPlanWeekViewSet,
+    WorkoutPlanDayViewSet,
+    PersonalRecordViewSet,
+    FitnessGoalViewSet,
+    RestDayViewSet,
+    ExerciseStatsViewSet,
+    ProgressiveOverloadViewSet,
 )
 
 router = DefaultRouter()
@@ -40,6 +55,21 @@ router.register(r'health/sleep/insights', SleepInsightViewSet, basename='sleep-i
 router.register(r'health/exercise/types', ExerciseTypeViewSet, basename='exercise-type')
 router.register(r'health/exercise/logs', ExerciseLogViewSet, basename='exercise-log')
 router.register(r'health/body-metrics', BodyMetricsViewSet, basename='body-metrics')
+router.register(r'health/exercises', ExerciseViewSet, basename='exercise')
+router.register(r'health/muscle-groups', MuscleGroupViewSet, basename='muscle-group')
+router.register(r'health/equipment', EquipmentViewSet, basename='equipment')
+router.register(r'health/workouts', WorkoutViewSet, basename='workout')
+router.register(r'health/workout-exercises', WorkoutExerciseViewSet, basename='workout-exercise')
+router.register(r'health/exercise-sets', ExerciseSetViewSet, basename='exercise-set')
+router.register(r'health/workout-logs', WorkoutLogViewSet, basename='workout-log')
+router.register(r'health/workout-plans', WorkoutPlanViewSet, basename='workout-plan')
+router.register(r'health/workout-plan-weeks', WorkoutPlanWeekViewSet, basename='workout-plan-week')
+router.register(r'health/workout-plan-days', WorkoutPlanDayViewSet, basename='workout-plan-day')
+router.register(r'health/personal-records', PersonalRecordViewSet, basename='personal-record')
+router.register(r'health/fitness-goals', FitnessGoalViewSet, basename='fitness-goal')
+router.register(r'health/rest-days', RestDayViewSet, basename='rest-day')
+router.register(r'health/exercise-stats', ExerciseStatsViewSet, basename='exercise-stats')
+router.register(r'health/progressive-overload', ProgressiveOverloadViewSet, basename='progressive-overload')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

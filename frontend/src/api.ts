@@ -8,6 +8,24 @@ import type {
   ExerciseType,
   ExerciseLog,
   BodyMetrics,
+  MuscleGroup,
+  Equipment,
+  Exercise,
+  Workout,
+  WorkoutExercise,
+  ExerciseSet,
+  WorkoutLog,
+  WorkoutPlan,
+  WorkoutPlanWeek,
+  WorkoutPlanDay,
+  PersonalRecord,
+  FitnessGoal,
+  RestDay,
+  ExerciseStats,
+  ProgressiveOverload,
+  WorkoutHeatmapEntry,
+  ExerciseVolumeData,
+  MuscleGroupBalanceData,
 } from './types/health';
 import type { Habit } from './types/habits';
 import type {
@@ -348,6 +366,84 @@ export const healthApi = {
   getExerciseLogs: () => api.get('/health/exercise/logs/'),
   createExerciseLog: (data: Partial<ExerciseLog>) => api.post('/health/exercise/logs/', data),
   getExerciseStats: () => api.get('/health/exercise/logs/stats/'),
+
+  // Exercise Library
+  getMuscleGroups: () => api.get<MuscleGroup[]>('/health/muscle-groups/'),
+  getEquipment: () => api.get<Equipment[]>('/health/equipment/'),
+  getExercises: () => api.get<Exercise[]>('/health/exercises/'),
+  getExercise: (id: string) => api.get<Exercise>(`/health/exercises/${id}/`),
+  createExercise: (data: Partial<Exercise>) => api.post('/health/exercises/', data),
+  updateExercise: (id: string, data: Partial<Exercise>) => api.patch(`/health/exercises/${id}/`, data),
+  deleteExercise: (id: string) => api.delete(`/health/exercises/${id}/`),
+
+  // Workouts
+  getWorkouts: () => api.get<Workout[]>('/health/workouts/'),
+  getWorkout: (id: string) => api.get<Workout>(`/health/workouts/${id}/`),
+  createWorkout: (data: Partial<Workout>) => api.post('/health/workouts/', data),
+  updateWorkout: (id: string, data: Partial<Workout>) => api.put(`/health/workouts/${id}/`, data),
+  deleteWorkout: (id: string) => api.delete(`/health/workouts/${id}/`),
+  getWorkoutExercises: (workoutId: string) => api.get<WorkoutExercise[]>(`/health/workout-exercises/?workout=${workoutId}`),
+  addWorkoutExercise: (data: Partial<WorkoutExercise>) => api.post('/health/workout-exercises/', data),
+  updateWorkoutExercise: (id: string, data: Partial<WorkoutExercise>) => api.put(`/health/workout-exercises/${id}/`, data),
+  deleteWorkoutExercise: (id: string) => api.delete(`/health/workout-exercises/${id}/`),
+
+  // Workout Logs
+  getWorkoutLogs: () => api.get<WorkoutLog[]>('/health/workout-logs/'),
+  getWorkoutLog: (id: string) => api.get<WorkoutLog>(`/health/workout-logs/${id}/`),
+  createWorkoutLog: (data: Partial<WorkoutLog>) => api.post('/health/workout-logs/', data),
+  updateWorkoutLog: (id: string, data: Partial<WorkoutLog>) => api.patch(`/health/workout-logs/${id}/`, data),
+  deleteWorkoutLog: (id: string) => api.delete(`/health/workout-logs/${id}/`),
+  getWorkoutHeatmap: (days?: number) => api.get<WorkoutHeatmapEntry[]>('/health/workout-logs/heatmap/', { params: days ? { days } : {} }),
+  getVolumeOverTime: (days?: number) => api.get<ExerciseVolumeData[]>('/health/workout-logs/volume_over_time/', { params: days ? { days } : {} }),
+  getMuscleGroupBalance: (days?: number) => api.get<MuscleGroupBalanceData[]>('/health/workout-logs/muscle_group_balance/', { params: days ? { days } : {} }),
+
+  // Exercise Sets
+  getExerciseSets: (workoutLogId?: string) => api.get<ExerciseSet[]>('/health/exercise-sets/', { params: workoutLogId ? { workout_log: workoutLogId } : {} }),
+  createExerciseSet: (data: Partial<ExerciseSet>) => api.post('/health/exercise-sets/', data),
+  updateExerciseSet: (id: string, data: Partial<ExerciseSet>) => api.patch(`/health/exercise-sets/${id}/`, data),
+  deleteExerciseSet: (id: string) => api.delete(`/health/exercise-sets/${id}/`),
+
+  // Workout Plans
+  getWorkoutPlans: () => api.get<WorkoutPlan[]>('/health/workout-plans/'),
+  getWorkoutPlan: (id: string) => api.get<WorkoutPlan>(`/health/workout-plans/${id}/`),
+  createWorkoutPlan: (data: Partial<WorkoutPlan>) => api.post('/health/workout-plans/', data),
+  updateWorkoutPlan: (id: string, data: Partial<WorkoutPlan>) => api.put(`/health/workout-plans/${id}/`, data),
+  deleteWorkoutPlan: (id: string) => api.delete(`/health/workout-plans/${id}/`),
+  activateWorkoutPlan: (id: string) => api.post(`/health/workout-plans/${id}/activate/`),
+  completeWorkoutPlan: (id: string) => api.post(`/health/workout-plans/${id}/complete/`),
+  getWorkoutPlanWeeks: (planId: string) => api.get<WorkoutPlanWeek[]>(`/health/workout-plan-weeks/?plan=${planId}`),
+  getWorkoutPlanDays: (weekId: string) => api.get<WorkoutPlanDay[]>(`/health/workout-plan-days/?week=${weekId}`),
+
+  // Personal Records
+  getPersonalRecords: () => api.get<PersonalRecord[]>('/health/personal-records/'),
+  createPersonalRecord: (data: Partial<PersonalRecord>) => api.post('/health/personal-records/', data),
+  updatePersonalRecord: (id: string, data: Partial<PersonalRecord>) => api.put(`/health/personal-records/${id}/`, data),
+  deletePersonalRecord: (id: string) => api.delete(`/health/personal-records/${id}/`),
+  getPersonalRecordsByExercise: () => api.get('/health/personal-records/by_exercise/'),
+
+  // Fitness Goals
+  getFitnessGoals: () => api.get<FitnessGoal[]>('/health/fitness-goals/'),
+  getFitnessGoal: (id: string) => api.get<FitnessGoal>(`/health/fitness-goals/${id}/`),
+  createFitnessGoal: (data: Partial<FitnessGoal>) => api.post('/health/fitness-goals/', data),
+  updateFitnessGoal: (id: string, data: Partial<FitnessGoal>) => api.put(`/health/fitness-goals/${id}/`, data),
+  deleteFitnessGoal: (id: string) => api.delete(`/health/fitness-goals/${id}/`),
+  updateFitnessGoalProgress: (id: string, current_value: number) => api.post(`/health/fitness-goals/${id}/update_progress/`, { current_value }),
+  getActiveFitnessGoals: () => api.get<FitnessGoal[]>('/health/fitness-goals/active/'),
+
+  // Rest Days
+  getRestDays: () => api.get<RestDay[]>('/health/rest-days/'),
+  createRestDay: (data: Partial<RestDay>) => api.post('/health/rest-days/', data),
+  updateRestDay: (id: string, data: Partial<RestDay>) => api.put(`/health/rest-days/${id}/`, data),
+  deleteRestDay: (id: string) => api.delete(`/health/rest-days/${id}/`),
+
+  // Exercise Stats
+  getExerciseStats: () => api.get<ExerciseStats>('/health/exercise-stats/'),
+  refreshExerciseStats: () => api.post('/health/exercise-stats/refresh/'),
+
+  // Progressive Overload
+  getProgressiveOverloads: () => api.get<ProgressiveOverload[]>('/health/progressive-overload/'),
+  createProgressiveOverload: (data: Partial<ProgressiveOverload>) => api.post('/health/progressive-overload/', data),
+  updateProgressiveOverload: (id: string, data: Partial<ProgressiveOverload>) => api.put(`/health/progressive-overload/${id}/`, data),
 
   // Body Metrics
   getBodyMetrics: () => api.get('/health/body-metrics/'),
