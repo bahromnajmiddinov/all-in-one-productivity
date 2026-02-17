@@ -673,7 +673,7 @@ class SleepLogViewSet(viewsets.ModelViewSet):
             insights.append({
                 'type': 'warning',
                 'title': 'High Sleep Debt',
-                'description': f"You have accumulated {round(stats.sleep_debt_minutes / 60, 1)} hours of sleep debt. Try to get extra sleep this weekend.',
+                'description': f"You have accumulated {round(stats.sleep_debt_minutes / 60, 1)} hours of sleep debt. Try to get extra sleep this weekend.",
                 'priority': 'high',
             })
 

@@ -359,7 +359,7 @@ class JournalEntryViewSet(viewsets.ModelViewSet):
         return Response(calendar_data)
     
     @action(detail=False, methods=['get'])
-    by_date(self, request):
+    def by_date(self, request):
         """Get entry for a specific date"""
         date_str = request.query_params.get('date')
         if not date_str:
