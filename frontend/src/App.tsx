@@ -12,6 +12,10 @@ import { Health } from './pages/Health';
 import { Habits } from './pages/Habits';
 import { Tasks } from './pages/Tasks';
 import { Finance } from './pages/Finance';
+import { Journal } from './pages/Journal';
+import { JournalEntryDetail } from './pages/JournalEntryDetail';
+import { JournalNewEntry } from './pages/JournalNewEntry';
+import { JournalAnalytics } from './pages/JournalAnalytics';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -42,6 +46,10 @@ function App() {
           <Route path="health" element={<Health />} />
           <Route path="habits" element={<Habits />} />
           <Route path="finance" element={<Finance />} />
+          <Route path="journal" element={<Journal />} />
+          <Route path="journal/new" element={<JournalNewEntry />} />
+          <Route path="journal/:id" element={<JournalEntryDetail />} />
+          <Route path="journal/analytics" element={<JournalAnalytics />} />
         </Route>
       </Routes>
     </BrowserRouter>
