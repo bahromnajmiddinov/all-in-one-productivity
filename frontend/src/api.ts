@@ -573,4 +573,80 @@ export const journalApi = {
   getWritingPatterns: () => api.get('/journal/stats/writing_patterns/'),
 };
 
+export const moodApi = {
+  // Scales
+  getScales: () => api.get('/mood/scales/'),
+  getScale: (id: string) => api.get(`/mood/scales/${id}/`),
+  createScale: (data: unknown) => api.post('/mood/scales/', data),
+  updateScale: (id: string, data: unknown) => api.put(`/mood/scales/${id}/`, data),
+  deleteScale: (id: string) => api.delete(`/mood/scales/${id}/`),
+  setDefaultScale: (id: string) => api.post(`/mood/scales/${id}/set_default/`),
+
+  // Entries
+  getEntries: (params?: {
+    start_date?: string;
+    end_date?: string;
+    time_of_day?: string;
+    min_mood?: number;
+    max_mood?: number;
+  }) => api.get('/mood/entries/', { params }),
+  getEntry: (id: string) => api.get(`/mood/entries/${id}/`),
+  createEntry: (data: unknown) => api.post('/mood/entries/', data),
+  updateEntry: (id: string, data: unknown) => api.put(`/mood/entries/${id}/`, data),
+  deleteEntry: (id: string) => api.delete(`/mood/entries/${id}/`),
+  quickLog: (data: { mood_value: number; time_of_day: string; notes?: string }) =>
+    api.post('/mood/entries/quick_log/', data),
+  getTodayEntries: () => api.get('/mood/entries/today/'),
+
+  // Timeline & Analytics
+  getTimeline: (days?: number) => api.get('/mood/entries/timeline/', { params: days ? { days } : {} }),
+  getHeatmap: (year?: number) => api.get('/mood/entries/heatmap/', { params: year ? { year } : {} }),
+  getPatterns: (days?: number) => api.get('/mood/entries/patterns/', { params: days ? { days } : {} }),
+  getCompare: (metric: string, days?: number) =>
+    api.get('/mood/entries/compare/', { params: { metric, ...(days ? { days } : {}) } }),
+  getEmotionDistribution: (days?: number) =>
+    api.get('/mood/entries/emotion_distribution/', { params: days ? { days } : {} }),
+
+  // Factors
+  getFactors: () => api.get('/mood/factors/'),
+  createFactor: (data: unknown) => api.post('/mood/factors/', data),
+  updateFactor: (id: string, data: unknown) => api.put(`/mood/factors/${id}/`, data),
+  deleteFactor: (id: string) => api.delete(`/mood/factors/${id}/`),
+
+  // Emotions
+  getEmotions: () => api.get('/mood/emotions/'),
+  createEmotion: (data: unknown) => api.post('/mood/emotions/', data),
+  updateEmotion: (id: string, data: unknown) => api.put(`/mood/emotions/${id}/`, data),
+  deleteEmotion: (id: string) => api.delete(`/mood/emotions/${id}/`),
+  getEmotionWheel: () => api.get('/mood/emotions/wheel/'),
+
+  // Triggers
+  getTriggers: () => api.get('/mood/triggers/'),
+  createTrigger: (data: unknown) => api.post('/mood/triggers/', data),
+  updateTrigger: (id: string, data: unknown) => api.put(`/mood/triggers/${id}/`, data),
+  deleteTrigger: (id: string) => api.delete(`/mood/triggers/${id}/`),
+  getTriggerAnalysis: (days?: number) =>
+    api.get('/mood/triggers/analysis/', { params: days ? { days } : {} }),
+
+  // Correlations
+  getCorrelations: () => api.get('/mood/correlations/'),
+  computeCorrelations: (days?: number) => api.post('/mood/correlations/compute/', { days }),
+
+  // Insights
+  getInsights: () => api.get('/mood/insights/'),
+  dismissInsight: (id: string) => api.post(`/mood/insights/${id}/dismiss/`),
+  markInsightRead: (id: string) => api.post(`/mood/insights/${id}/mark_read/`),
+  generateInsights: (days?: number) =>
+    api.get('/mood/insights/generate/', { params: days ? { days } : {} }),
+
+  // Stats
+  getStats: () => api.get('/mood/stats/'),
+  refreshStats: () => api.post('/mood/stats/refresh/'),
+
+  // Journal Links
+  getJournalLinks: () => api.get('/mood/journal-links/'),
+  createJournalLink: (data: unknown) => api.post('/mood/journal-links/', data),
+  deleteJournalLink: (id: string) => api.delete(`/mood/journal-links/${id}/`),
+};
+
 export default api;
