@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.finance',
     'apps.journal',
     'apps.mood',
+    'apps.dashboard',
 ]
 
 MIDDLEWARE = [

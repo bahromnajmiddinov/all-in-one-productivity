@@ -4,6 +4,14 @@ from rest_framework.routers import DefaultRouter
 from apps.pomodoro.views import PomodoroSettingsViewSet
 from apps.tasks.views import ProjectViewSet, TaskViewSet, TagViewSet
 from apps.calendar.views import CalendarEventViewSet, CalendarPreferenceViewSet, CalendarViewSet
+from apps.dashboard.views import (
+    DashboardViewSet,
+    DashboardWidgetViewSet,
+    DashboardPreferenceViewSet,
+    DashboardInsightViewSet,
+    MetricComparisonViewSet,
+    CorrelationAnalysisViewSet,
+)
 from apps.health.views import (
     WaterIntakeSettingsViewSet,
     WaterLogViewSet,
@@ -39,6 +47,12 @@ router = DefaultRouter()
 router.register(r'projects', ProjectViewSet, basename='project')
 router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'tags', TagViewSet, basename='tag')
+router.register(r'dashboard', DashboardViewSet, basename='dashboard')
+router.register(r'dashboard/widgets', DashboardWidgetViewSet, basename='dashboard-widget')
+router.register(r'dashboard/preferences', DashboardPreferenceViewSet, basename='dashboard-preference')
+router.register(r'dashboard/insights', DashboardInsightViewSet, basename='dashboard-insight')
+router.register(r'dashboard/comparisons', MetricComparisonViewSet, basename='metric-comparison')
+router.register(r'dashboard/correlations', CorrelationAnalysisViewSet, basename='correlation-analysis')
 router.register(r'calendar', CalendarViewSet, basename='calendar')
 router.register(r'calendar/events', CalendarEventViewSet, basename='calendar-event')
 router.register(r'calendar/preferences', CalendarPreferenceViewSet, basename='calendar-preference')
@@ -89,4 +103,5 @@ urlpatterns = [
     path('api/v1/finance/', include('apps.finance.urls')),
     path('api/v1/journal/', include('apps.journal.urls')),
     path('api/v1/mood/', include('apps.mood.urls')),
+    path('api/v1/', include('apps.dashboard.urls')),
 ]
