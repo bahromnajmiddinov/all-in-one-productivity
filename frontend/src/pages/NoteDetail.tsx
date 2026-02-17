@@ -8,8 +8,7 @@ import { MarkdownEditor } from '../components/notes/MarkdownEditor';
 import { Button } from '../components/ui/Button';
 import { 
   ArrowLeft, Pin, Star, Archive, Trash2, Edit2, 
-  FileText, CheckSquare, Code, Mic, Globe, Markdown,
-  Link2, Hash, Calendar
+  FileText, CheckSquare, Code, Mic, Globe, Link2, Hash, Calendar
 } from 'lucide-react';
 import type { Note, NoteFolder, NoteTag } from '../types/notes';
 
@@ -19,7 +18,7 @@ const noteTypeIcons: Record<string, typeof FileText> = {
   code: Code,
   voice: Mic,
   web_clip: Globe,
-  markdown: Markdown,
+  markdown: FileText,
 };
 
 const noteTypeLabels: Record<string, string> = {
