@@ -10,10 +10,12 @@ export function Health() {
         <p className="text-body mt-1">Water, sleep, and exercise tracking.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="space-y-6">
         <WaterTracker />
-        <SleepTracker />
-        <ExerciseTracker />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SleepTracker />
+          <ExerciseTracker />
+        </div>
       </div>
     </div>
   );
