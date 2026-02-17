@@ -23,7 +23,8 @@ import {
 import { cn } from '../lib/utils';
 
 const navItems = [
-  { to: '/today', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/today', label: 'Today', icon: Sun },
   { to: '/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/projects', label: 'Projects', icon: FolderKanban },
   { to: '/pomodoro', label: 'Pomodoro', icon: Timer },

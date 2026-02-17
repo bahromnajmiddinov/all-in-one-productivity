@@ -17,6 +17,10 @@ import { JournalEntryDetail } from './pages/JournalEntryDetail';
 import { JournalNewEntry } from './pages/JournalNewEntry';
 import { JournalAnalytics } from './pages/JournalAnalytics';
 import Mood from './pages/Mood';
+import { Dashboard } from './pages/Dashboard';
+import { CustomDashboard } from './pages/CustomDashboard';
+import { DashboardComparison } from './pages/DashboardComparison';
+import { DashboardCorrelations } from './pages/DashboardCorrelations';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -36,8 +40,13 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/today" />} />
+          <Route index element={<Navigate to="/dashboard" />} />
           <Route path="today" element={<Today />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard/custom" element={<CustomDashboard />} />
+          <Route path="dashboard/custom/:id" element={<CustomDashboard />} />
+          <Route path="dashboard/comparison" element={<DashboardComparison />} />
+          <Route path="dashboard/correlations" element={<DashboardCorrelations />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="projects" element={<Projects />} />
           <Route path="pomodoro" element={<Pomodoro />} />
