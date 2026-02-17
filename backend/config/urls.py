@@ -9,6 +9,12 @@ from apps.health.views import (
     WaterLogViewSet,
     WaterContainerViewSet,
     SleepLogViewSet,
+    SleepDisruptionViewSet,
+    SleepNapViewSet,
+    SleepGoalViewSet,
+    SleepStatsViewSet,
+    SleepDebtViewSet,
+    SleepInsightViewSet,
     ExerciseTypeViewSet,
     ExerciseLogViewSet,
     BodyMetricsViewSet,
@@ -24,7 +30,13 @@ router.register(r'calendar/preferences', CalendarPreferenceViewSet, basename='ca
 router.register(r'health/water/settings', WaterIntakeSettingsViewSet, basename='water-settings')
 router.register(r'health/water/containers', WaterContainerViewSet, basename='water-container')
 router.register(r'health/water/logs', WaterLogViewSet, basename='water-log')
-router.register(r'health/sleep', SleepLogViewSet, basename='sleep-log')
+router.register(r'health/sleep/logs', SleepLogViewSet, basename='sleep-log')
+router.register(r'health/sleep/disruptions', SleepDisruptionViewSet, basename='sleep-disruption')
+router.register(r'health/sleep/naps', SleepNapViewSet, basename='sleep-nap')
+router.register(r'health/sleep/goals', SleepGoalViewSet, basename='sleep-goal')
+router.register(r'health/sleep/stats', SleepStatsViewSet, basename='sleep-stats')
+router.register(r'health/sleep/debt', SleepDebtViewSet, basename='sleep-debt')
+router.register(r'health/sleep/insights', SleepInsightViewSet, basename='sleep-insight')
 router.register(r'health/exercise/types', ExerciseTypeViewSet, basename='exercise-type')
 router.register(r'health/exercise/logs', ExerciseLogViewSet, basename='exercise-log')
 router.register(r'health/body-metrics', BodyMetricsViewSet, basename='body-metrics')

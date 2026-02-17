@@ -1,9 +1,11 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from math import sqrt
+from collections import defaultdict
 
-from django.db.models import Sum, Avg, Count
+from django.db.models import Sum, Avg, Count, StdDev, F, ExpressionWrapper, DurationField
 from django.utils import timezone
-from rest_framework import viewsets, permissions
+from django.db.models.functions import ExtractHour, ExtractWeekDay
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -15,6 +17,13 @@ from .models import (
     WaterLog,
     WaterContainer,
     SleepLog,
+    SleepDisruption,
+    SleepNap,
+    SleepGoal,
+    SleepStats,
+    SleepDebt,
+    SleepCorrelation,
+    SleepInsight,
     ExerciseType,
     ExerciseLog,
     BodyMetrics,
@@ -24,6 +33,13 @@ from .serializers import (
     WaterLogSerializer,
     WaterContainerSerializer,
     SleepLogSerializer,
+    SleepDisruptionSerializer,
+    SleepNapSerializer,
+    SleepGoalSerializer,
+    SleepStatsSerializer,
+    SleepDebtSerializer,
+    SleepCorrelationSerializer,
+    SleepInsightSerializer,
     ExerciseTypeSerializer,
     ExerciseLogSerializer,
     BodyMetricsSerializer,
@@ -349,12 +365,12 @@ class SleepLogViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return SleepLog.objects.filter(user=self.request.user)
+        return SleepLog.objects.filter(user=self.request.user).select_related('user')
 
     def perform_create(self, serializer):
         bed_time = serializer.validated_data.get('bed_time')
         wake_time = serializer.validated_data.get('wake_time')
-        duration = int((wake_time - bed_time).total_seconds() // 60)
+        duration = int((wake_time - bed_time).total_seconds() / 60)
         log_date = wake_time.date()
 
         serializer.save(
@@ -363,28 +379,420 @@ class SleepLogViewSet(viewsets.ModelViewSet):
             date=log_date,
         )
 
+        # Update stats after creating log
+        stats, _ = SleepStats.objects.get_or_create(user=self.request.user)
+        stats.update_stats()
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+        # Update stats after updating log
+        stats, _ = SleepStats.objects.get_or_create(user=self.request.user)
+        stats.update_stats()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+        # Update stats after deleting log
+        stats, _ = SleepStats.objects.get_or_create(user=self.request.user)
+        stats.update_stats()
+
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        last_30_days = timezone.localdate() - timedelta(days=30)
-        logs = self.get_queryset().filter(date__gte=last_30_days)
+        stats, _ = SleepStats.objects.get_or_create(user=request.user)
+        serializer = SleepStatsSerializer(stats)
+        return Response(serializer.data)
 
-        avg_duration = logs.aggregate(Avg('duration_minutes'))['duration_minutes__avg'] or 0
-        avg_quality = logs.aggregate(Avg('quality'))['quality__avg'] or 0
+    @action(detail=False, methods=['get'])
+    def heatmap(self, request):
+        """Get calendar heatmap data for sleep duration and quality"""
+        days = int(request.query_params.get('days', 90))
+        start_date = timezone.localdate() - timedelta(days=days)
 
-        streak = 0
-        check_date = timezone.localdate()
-        while SleepLog.objects.filter(user=request.user, date=check_date).exists():
-            streak += 1
-            check_date -= timedelta(days=1)
+        logs = self.get_queryset().filter(date__gte=start_date).order_by('-date')
 
-        return Response(
+        heatmap_data = [
             {
-                'avg_duration_hours': round(avg_duration / 60, 1),
-                'avg_quality': round(avg_quality, 1),
-                'total_logs': logs.count(),
-                'streak_days': streak,
+                'date': log.date.isoformat(),
+                'duration_hours': round(log.duration_minutes / 60, 1),
+                'quality': log.quality,
+                'sleep_score': float(log.sleep_score) if log.sleep_score else None,
             }
+            for log in logs
+        ]
+
+        return Response(heatmap_data)
+
+    @action(detail=False, methods=['get'])
+    def trends(self, request):
+        """Get sleep duration and quality trends over time"""
+        days = int(request.query_params.get('days', 30))
+        start_date = timezone.localdate() - timedelta(days=days)
+
+        logs = self.get_queryset().filter(date__gte=start_date).order_by('date')
+
+        duration_data = [
+            {
+                'date': log.date.isoformat(),
+                'duration_hours': round(log.duration_minutes / 60, 1),
+            }
+            for log in logs
+        ]
+
+        quality_data = [
+            {
+                'date': log.date.isoformat(),
+                'quality': log.quality,
+            }
+            for log in logs
+        ]
+
+        score_data = [
+            {
+                'date': log.date.isoformat(),
+                'score': float(log.sleep_score) if log.sleep_score else None,
+            }
+            for log in logs
+        ]
+
+        return Response({
+            'duration': duration_data,
+            'quality': quality_data,
+            'score': score_data,
+        })
+
+    @action(detail=False, methods=['get'])
+    def consistency(self, request):
+        """Calculate sleep schedule consistency metrics"""
+        days = int(request.query_params.get('days', 30))
+        start_date = timezone.localdate() - timedelta(days=days)
+
+        logs = self.get_queryset().filter(date__gte=start_date)
+
+        # Calculate average bed time and wake time
+        bed_hours = []
+        wake_hours = []
+
+        for log in logs:
+            bed_time = timezone.localtime(log.bed_time)
+            wake_time = timezone.localtime(log.wake_time)
+            bed_hours.append(bed_time.hour + bed_time.minute / 60)
+            wake_hours.append(wake_time.hour + wake_time.minute / 60)
+
+        consistency_score = 0
+        if bed_hours and wake_hours:
+            # Calculate standard deviation
+            import statistics
+            bed_stddev = statistics.stdev(bed_hours) if len(bed_hours) > 1 else 0
+            wake_stddev = statistics.stdev(wake_hours) if len(wake_hours) > 1 else 0
+
+            # Consistency score: lower stddev = higher consistency
+            bed_consistency = max(0, 100 - (bed_stddev * 10))
+            wake_consistency = max(0, 100 - (wake_stddev * 10))
+            consistency_score = (bed_consistency + wake_consistency) / 2
+
+        # Calculate days meeting schedule goals
+        goals, _ = SleepGoal.objects.get_or_create(user=request.user)
+        days_on_schedule = 0
+
+        for log in logs:
+            if goals.target_bed_time and goals.target_wake_time:
+                bed_time = timezone.localtime(log.bed_time)
+                wake_time = timezone.localtime(log.wake_time)
+
+                target_bed = datetime.combine(log.date, goals.target_bed_time)
+                target_wake = datetime.combine(log.date, goals.target_wake_time)
+
+                bed_diff = abs((bed_time - target_bed).total_seconds() / 60)
+                wake_diff = abs((wake_time - target_wake).total_seconds() / 60)
+
+                if bed_diff <= goals.bed_time_window_minutes and wake_diff <= goals.wake_time_window_minutes:
+                    days_on_schedule += 1
+
+        schedule_compliance = (days_on_schedule / logs.count() * 100) if logs.count() > 0 else 0
+
+        return Response({
+            'consistency_score': round(consistency_score, 1),
+            'schedule_compliance': round(schedule_compliance, 1),
+            'days_on_schedule': days_on_schedule,
+            'total_days': logs.count(),
+        })
+
+    @action(detail=False, methods=['get'])
+    def optimal_window(self, request):
+        """Find optimal sleep window based on quality data"""
+        logs = self.get_queryset()
+
+        if logs.count() < 7:
+            return Response({'error': 'Need at least 7 sleep logs'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Group logs by bed time hour
+        hour_scores = defaultdict(list)
+        for log in logs:
+            if log.sleep_score:
+                bed_hour = timezone.localtime(log.bed_time).hour
+                hour_scores[bed_hour].append(log.sleep_score)
+
+        # Find best hour
+        best_hour = None
+        best_avg = 0
+
+        for hour, scores in hour_scores.items():
+            if len(scores) >= 3:  # Need at least 3 data points
+                avg_score = sum(scores) / len(scores)
+                if avg_score > best_avg:
+                    best_avg = avg_score
+                    best_hour = hour
+
+        if best_hour is not None:
+            return Response({
+                'optimal_bed_time_start': f"{best_hour:02d}:00",
+                'optimal_bed_time_end': f"{best_hour + 1:02d}:00",
+                'avg_score': round(best_avg, 2),
+                'data_points': len(hour_scores[best_hour]),
+            })
+
+        return Response({'error': 'Insufficient data'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'])
+    def correlations(self, request):
+        """Calculate correlations between sleep and other metrics"""
+        days = int(request.query_params.get('days', 30))
+        start_date = timezone.localdate() - timedelta(days=days)
+
+        logs = self.get_queryset().filter(date__gte=start_date)
+        if logs.count() < 5:
+            return Response({'error': 'Need at least 5 sleep logs'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Prepare sleep data by date
+        sleep_by_date = {log.date: log for log in logs}
+
+        # Correlate with mood
+        mood_entries = JournalMood.objects.filter(
+            user=request.user,
+            date__gte=start_date
+        ).values('date', 'mood', 'energy_level')
+
+        mood_pairs = []
+        energy_pairs = []
+
+        for entry in mood_entries:
+            log = sleep_by_date.get(entry['date'])
+            if log and log.sleep_score and entry['mood']:
+                mood_pairs.append((float(log.sleep_score), entry['mood']))
+            if log and log.sleep_score and entry.get('energy_level'):
+                energy_pairs.append((float(log.sleep_score), entry['energy_level']))
+
+        # Correlate with productivity (Pomodoro)
+        pomodoro_sessions = PomodoroSession.objects.filter(
+            user=request.user,
+            started_at__date__gte=start_date
+        ).values('started_at__date').annotate(
+            avg_productivity=Avg('productivity_score'),
+            total_minutes=Sum('duration_minutes')
         )
+
+        productivity_pairs = []
+        for session in pomodoro_sessions:
+            log = sleep_by_date.get(session['started_at__date'])
+            if log and log.sleep_score and session['avg_productivity']:
+                productivity_pairs.append((float(log.sleep_score), float(session['avg_productivity'])))
+
+        # Correlate with exercise
+        exercise_logs = ExerciseLog.objects.filter(
+            user=request.user,
+            date__gte=start_date
+        ).values('date').annotate(total_duration=Sum('duration_minutes'))
+
+        exercise_pairs = []
+        for ex in exercise_logs:
+            log = sleep_by_date.get(ex['date'])
+            if log and log.sleep_score:
+                exercise_pairs.append((float(log.sleep_score), ex['total_duration'] or 0))
+
+        return Response({
+            'mood': {
+                'coefficient': _calculate_pearson(mood_pairs),
+                'data_points': len(mood_pairs),
+            },
+            'energy': {
+                'coefficient': _calculate_pearson(energy_pairs),
+                'data_points': len(energy_pairs),
+            },
+            'productivity': {
+                'coefficient': _calculate_pearson(productivity_pairs),
+                'data_points': len(productivity_pairs),
+            },
+            'exercise': {
+                'coefficient': _calculate_pearson(exercise_pairs),
+                'data_points': len(exercise_pairs),
+            },
+        })
+
+    @action(detail=False, methods=['get'])
+    def insights(self, request):
+        """Get personalized sleep insights"""
+        stats, _ = SleepStats.objects.get_or_create(user=request.user)
+        insights = []
+
+        # Check sleep debt
+        if stats.sleep_debt_minutes > 240:  # More than 4 hours debt
+            insights.append({
+                'type': 'warning',
+                'title': 'High Sleep Debt',
+                'description': f"You have accumulated {round(stats.sleep_debt_minutes / 60, 1)} hours of sleep debt. Try to get extra sleep this weekend.',
+                'priority': 'high',
+            })
+
+        # Check consistency
+        if stats.current_streak >= 7:
+            insights.append({
+                'type': 'achievement',
+                'title': 'Great Consistency!',
+                'description': f"You've logged sleep for {stats.current_streak} consecutive days. Keep it up!",
+                'priority': 'low',
+            })
+
+        # Check average quality
+        if stats.avg_quality_7d and stats.avg_quality_7d < 5:
+            insights.append({
+                'type': 'recommendation',
+                'title': 'Low Sleep Quality',
+                'description': "Your sleep quality has been below average this week. Consider reducing screen time before bed.",
+                'priority': 'medium',
+            })
+
+        # Check efficiency
+        if stats.avg_efficiency_7d and stats.avg_efficiency_7d < 80:
+            insights.append({
+                'type': 'recommendation',
+                'title': 'Improve Sleep Efficiency',
+                'description': "Your sleep efficiency is below 80%. Try maintaining a consistent sleep schedule and comfortable environment.",
+                'priority': 'medium',
+            })
+
+        return Response(insights)
+
+
+class SleepDisruptionViewSet(viewsets.ModelViewSet):
+    serializer_class = SleepDisruptionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SleepDisruption.objects.filter(sleep_log__user=self.request.user)
+
+    def perform_create(self, serializer):
+        sleep_log_id = self.request.data.get('sleep_log')
+        sleep_log = SleepLog.objects.get(id=sleep_log_id, user=self.request.user)
+        serializer.save(sleep_log=sleep_log)
+
+        # Update disruptions count
+        sleep_log.disruptions_count = SleepDisruption.objects.filter(sleep_log=sleep_log).count()
+        sleep_log.save()
+
+
+class SleepNapViewSet(viewsets.ModelViewSet):
+    serializer_class = SleepNapSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SleepNap.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+        # Update stats
+        stats, _ = SleepStats.objects.get_or_create(user=self.request.user)
+        stats.update_stats()
+
+
+class SleepGoalViewSet(viewsets.ModelViewSet):
+    serializer_class = SleepGoalSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SleepGoal.objects.filter(user=self.request.user)
+
+    def get_object(self):
+        obj, _ = SleepGoal.objects.get_or_create(user=self.request.user)
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+
+class SleepStatsViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SleepStatsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SleepStats.objects.filter(user=self.request.user)
+
+    def get_object(self):
+        obj, _ = SleepStats.objects.get_or_create(user=self.request.user)
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    @action(detail=False, methods=['post'])
+    def refresh(self, request):
+        """Manually refresh sleep statistics"""
+        stats, _ = SleepStats.objects.get_or_create(user=request.user)
+        stats.update_stats()
+        serializer = self.get_serializer(stats)
+        return Response(serializer.data)
+
+
+class SleepDebtViewSet(viewsets.ModelViewSet):
+    serializer_class = SleepDebtSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SleepDebt.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get sleep debt summary"""
+        days = int(request.query_params.get('days', 30))
+        start_date = timezone.localdate() - timedelta(days=days)
+
+        debts = SleepDebt.objects.filter(user=request.user, date__gte=start_date)
+        total_debt = sum(d.debt_minutes for d in debts if d.debt_minutes > 0)
+        total_surplus = sum(abs(d.debt_minutes) for d in debts if d.debt_minutes < 0)
+
+        return Response({
+            'total_debt_minutes': total_debt,
+            'total_surplus_minutes': total_surplus,
+            'net_balance_minutes': total_surplus - total_debt,
+            'average_daily_debt': round(total_debt / days, 1) if days > 0 else 0,
+        })
+
+
+class SleepInsightViewSet(viewsets.ModelViewSet):
+    serializer_class = SleepInsightSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return SleepInsight.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def dismiss(self, request, pk=None):
+        """Dismiss an insight"""
+        insight = self.get_object()
+        insight.is_dismissed = True
+        insight.save()
+        return Response({'status': 'dismissed'})
+
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        """Mark an insight as read"""
+        insight = self.get_object()
+        insight.is_read = True
+        insight.save()
+        return Response({'status': 'read'})
 
 
 class ExerciseTypeViewSet(viewsets.ModelViewSet):

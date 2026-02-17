@@ -298,9 +298,49 @@ export const healthApi = {
   deleteWaterContainer: (id: string) => api.delete(`/health/water/containers/${id}/`),
 
   // Sleep
-  getSleepLogs: () => api.get('/health/sleep/'),
-  createSleepLog: (data: Partial<SleepLog>) => api.post('/health/sleep/', data),
-  getSleepStats: () => api.get('/health/sleep/stats/'),
+  getSleepLogs: () => api.get('/health/sleep/logs/'),
+  createSleepLog: (data: Partial<SleepLog>) => api.post('/health/sleep/logs/', data),
+  updateSleepLog: (id: string, data: Partial<SleepLog>) => api.patch(`/health/sleep/logs/${id}/`, data),
+  deleteSleepLog: (id: string) => api.delete(`/health/sleep/logs/${id}/`),
+  getSleepStats: () => api.get('/health/sleep/logs/stats/'),
+  getSleepHeatmap: (days?: number) => api.get('/health/sleep/logs/heatmap/', { params: days ? { days } : {} }),
+  getSleepTrends: (days?: number) => api.get('/health/sleep/logs/trends/', { params: days ? { days } : {} }),
+  getSleepConsistency: (days?: number) => api.get('/health/sleep/logs/consistency/', { params: days ? { days } : {} }),
+  getSleepOptimalWindow: () => api.get('/health/sleep/logs/optimal_window/'),
+  getSleepCorrelations: (days?: number) => api.get('/health/sleep/logs/correlations/', { params: days ? { days } : {} }),
+  getSleepInsights: () => api.get('/health/sleep/logs/insights/'),
+
+  // Sleep Disruptions
+  getSleepDisruptions: (sleepLogId?: string) =>
+    api.get('/health/sleep/disruptions/', { params: sleepLogId ? { sleep_log: sleepLogId } : {} }),
+  createSleepDisruption: (data: any) => api.post('/health/sleep/disruptions/', data),
+  updateSleepDisruption: (id: string, data: any) => api.patch(`/health/sleep/disruptions/${id}/`, data),
+  deleteSleepDisruption: (id: string) => api.delete(`/health/sleep/disruptions/${id}/`),
+
+  // Sleep Naps
+  getSleepNaps: () => api.get('/health/sleep/naps/'),
+  createSleepNap: (data: any) => api.post('/health/sleep/naps/', data),
+  updateSleepNap: (id: string, data: any) => api.patch(`/health/sleep/naps/${id}/`, data),
+  deleteSleepNap: (id: string) => api.delete(`/health/sleep/naps/${id}/`),
+
+  // Sleep Goals
+  getSleepGoals: () => api.get('/health/sleep/goals/'),
+  updateSleepGoals: (data: any) => api.put('/health/sleep/goals/', data),
+
+  // Sleep Stats
+  getSleepAnalytics: () => api.get('/health/sleep/stats/'),
+  refreshSleepStats: () => api.post('/health/sleep/stats/refresh/'),
+
+  // Sleep Debt
+  getSleepDebt: (params?: { days?: number }) => api.get('/health/sleep/debt/', { params }),
+  createSleepDebt: (data: any) => api.post('/health/sleep/debt/', data),
+  getSleepDebtSummary: (days?: number) => api.get('/health/sleep/debt/summary/', { params: days ? { days } : {} }),
+
+  // Sleep Insights
+  getSleepInsightsList: () => api.get('/health/sleep/insights/'),
+  createSleepInsight: (data: any) => api.post('/health/sleep/insights/', data),
+  dismissSleepInsight: (id: string) => api.post(`/health/sleep/insights/${id}/dismiss/`),
+  markSleepInsightRead: (id: string) => api.post(`/health/sleep/insights/${id}/mark_read/`),
 
   // Exercise
   getExerciseTypes: () => api.get('/health/exercise/types/'),
