@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   Smile,
+  Zap,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -35,6 +36,7 @@ const navItems = [
   { to: '/health', label: 'Health', icon: Heart },
   { to: '/habits', label: 'Habits', icon: Target },
   { to: '/finance', label: 'Finance', icon: CreditCard },
+  { to: '/automation', label: 'Automation', icon: Zap },
 ];
 
 export function Layout() {

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Project, Task, Tag, TaskTag, TaskDependency
+from .models import Project, Task, Tag, TaskTag, TaskDependency, TaskTimeLog
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
@@ -29,3 +29,10 @@ class TaskAdmin(admin.ModelAdmin):
     list_filter = ('status', 'priority', 'user', 'project')
     search_fields = ('title', 'description')
     inlines = [TaskTagInline, TaskDependencyInline]
+
+
+@admin.register(TaskTimeLog)
+class TaskTimeLogAdmin(admin.ModelAdmin):
+    list_display = ('task', 'user', 'source', 'minutes', 'started_at', 'ended_at', 'created_at')
+    list_filter = ('source', 'user')
+    search_fields = ('task__title',)

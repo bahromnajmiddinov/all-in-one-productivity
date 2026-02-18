@@ -21,6 +21,7 @@ import { Dashboard } from './pages/Dashboard';
 import { CustomDashboard } from './pages/CustomDashboard';
 import { DashboardComparison } from './pages/DashboardComparison';
 import { DashboardCorrelations } from './pages/DashboardCorrelations';
+import { Automation } from './pages/Automation';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -56,6 +57,7 @@ function App() {
           <Route path="health" element={<Health />} />
           <Route path="habits" element={<Habits />} />
           <Route path="finance" element={<Finance />} />
+          <Route path="automation" element={<Automation />} />
           <Route path="journal" element={<Journal />} />
           <Route path="journal/new" element={<JournalNewEntry />} />
           <Route path="journal/:id" element={<JournalEntryDetail />} />

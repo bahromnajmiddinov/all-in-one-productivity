@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, Task, Tag, TaskDependency
+from .models import Project, Task, Tag, TaskDependency, TaskTimeLog
 
 
 class ProjectSerializer(serializers.ModelSerializer):
@@ -57,3 +57,20 @@ class TaskDependencySerializer(serializers.ModelSerializer):
         if attrs['task'] == attrs['depends_on_task']:
             raise serializers.ValidationError('Task cannot depend on itself.')
         return attrs
+
+
+class TaskTimeLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskTimeLog
+        fields = [
+            'id',
+            'task',
+            'pomodoro_session',
+            'source',
+            'minutes',
+            'started_at',
+            'ended_at',
+            'notes',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
