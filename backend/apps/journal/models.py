@@ -199,7 +199,6 @@ class JournalEntry(models.Model):
         indexes = [
             models.Index(fields=['user', '-entry_date']),
             models.Index(fields=['user', 'is_favorite']),
-            models.Index(fields=['tags']),
         ]
     
     def __str__(self):

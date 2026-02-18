@@ -919,7 +919,7 @@ class WorkoutPlan(models.Model):
 
 class WorkoutPlanWeek(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    plan = models.ForeignKey(WorkoutPlan, on_delete=models.CASCADE, related_name='weeks')
+    plan = models.ForeignKey(WorkoutPlan, on_delete=models.CASCADE, related_name='workout_weeks')
     week_number = models.PositiveSmallIntegerField()
 
     notes = models.TextField(blank=True)

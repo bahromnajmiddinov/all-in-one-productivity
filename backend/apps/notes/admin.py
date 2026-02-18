@@ -8,7 +8,7 @@ from .models import (
 
 @admin.register(NoteFolder)
 class NoteFolderAdmin(admin.ModelAdmin):
-    list_display = ['name', 'user', 'parent', 'note_count', 'is_default', 'created_at']
+    list_display = ['name', 'user', 'parent', 'is_default', 'created_at']
     list_filter = ['is_default', 'created_at']
     search_fields = ['name', 'user__email']
     readonly_fields = ['id', 'created_at', 'updated_at']
@@ -16,7 +16,7 @@ class NoteFolderAdmin(admin.ModelAdmin):
 
 @admin.register(NoteTag)
 class NoteTagAdmin(admin.ModelAdmin):
-    list_display = ['name', 'user', 'color', 'note_count']
+    list_display = ['name', 'user', 'color']
     search_fields = ['name', 'user__email']
     readonly_fields = ['id']
 
