@@ -1,12 +1,24 @@
 import { ProjectList } from '../components/ProjectList';
+import { FolderKanban } from 'lucide-react';
 
 export function Projects() {
   return (
-    <div className="p-6 md:p-8 max-w-content mx-auto">
+    <div className="page-container">
+      {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-h1">Projects</h1>
-        <p className="text-body mt-1">Organize tasks by project and track progress.</p>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 rounded-[var(--radius)] bg-accent-subtle text-accent">
+            <FolderKanban className="w-5 h-5" />
+          </div>
+          <h1 className="text-h1">Projects</h1>
+        </div>
+        <p className="text-body max-w-2xl">
+          Organize tasks by project and track progress. Create projects to group related tasks 
+          and monitor completion rates.
+        </p>
       </div>
+
+      {/* Project List */}
       <ProjectList />
     </div>
   );

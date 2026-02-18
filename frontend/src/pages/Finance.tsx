@@ -10,7 +10,7 @@ import {
   DollarSign,
   PiggyBank,
   CreditCard,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
 import { AccountList } from '../components/finance/AccountList';
 import { TransactionList } from '../components/finance/TransactionList';
@@ -29,6 +29,7 @@ import { RecurringTransactions } from '../components/finance/RecurringTransactio
 import { CategoryManager } from '../components/finance/CategoryManager';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { cn } from '../lib/utils';
 
 type TabType = 'overview' | 'transactions' | 'budgets' | 'analytics' | 'goals';
 
@@ -40,6 +41,13 @@ const tabs = [
   { id: 'goals' as TabType, label: 'Goals', icon: Target },
 ] as const;
 
+const quickActions = [
+  { id: 'income', label: 'Add Income', description: 'Record new earnings', icon: ArrowUpRight, color: 'success', tab: 'transactions' },
+  { id: 'expense', label: 'Add Expense', description: 'Track spending', icon: ArrowDownRight, color: 'destructive', tab: 'transactions' },
+  { id: 'budget', label: 'Set Budget', description: 'Manage limits', icon: PieChart, color: 'accent', tab: 'budgets' },
+  { id: 'goal', label: 'New Goal', description: 'Save for targets', icon: Target, color: 'warning', tab: 'goals' },
+] as const;
+
 export function Finance() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -49,21 +57,25 @@ export function Finance() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="page-container space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Finance</h1>
-          <p className="text-sm text-fg-muted mt-2 max-w-md">
-            Track your income, expenses, and financial goals in one place
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2 rounded-[var(--radius)] bg-success-subtle text-success">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <h1 className="text-h1">Finance</h1>
+          </div>
+          <p className="text-body max-w-xl">
+            Track your income, expenses, and financial goals in one place. 
+            Stay on top of your financial health.
           </p>
         </div>
         <Button 
-          variant="primary" 
-          className="flex items-center gap-2 shadow-sm hover:shadow-md transition-shadow"
           onClick={() => setActiveTab('transactions')}
         >
-          <ArrowUpRight className="w-4 h-4" />
+          <ArrowUpRight className="w-4 h-4 mr-1.5" />
           New Transaction
         </Button>
       </div>
@@ -72,21 +84,20 @@ export function Finance() {
       <FinanceOverview key={refreshKey} />
 
       {/* Tab Navigation */}
-      <div className="border-b border-border/60">
-        <nav className="flex space-x-1" aria-label="Tabs">
+      <div className="border-b border-border">
+        <nav className="flex gap-1" aria-label="Tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2.5 px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200
-                  ${activeTab === tab.id
+                className={cn(
+                  'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-fast',
+                  activeTab === tab.id
                     ? 'border-foreground text-foreground'
-                    : 'border-transparent text-fg-muted hover:text-foreground hover:border-border/60'
-                  }
-                `}
+                    : 'border-transparent text-fg-muted hover:text-foreground hover:border-border'
+                )}
               >
                 <Icon className="w-4 h-4" />
                 <span className="hidden sm:inline">{tab.label}</span>
@@ -97,63 +108,44 @@ export function Finance() {
       </div>
 
       {/* Tab Content */}
-      <div className="pb-8">
+      <div className="animate-fade-in">
         {activeTab === 'overview' && (
           <div className="space-y-8">
             {/* Quick Actions Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="hover:shadow-soft-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group" onClick={() => setActiveTab('transactions')}>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-green-500/10 text-green-500 group-hover:scale-110 transition-transform duration-200">
-                      <ArrowUpRight className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Add Income</p>
-                      <p className="text-xs text-fg-muted">Record new earnings</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="hover:shadow-soft-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group" onClick={() => setActiveTab('transactions')}>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-red-500/10 text-red-500 group-hover:scale-110 transition-transform duration-200">
-                      <ArrowDownRight className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Add Expense</p>
-                      <p className="text-xs text-fg-muted">Track spending</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="hover:shadow-soft-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group" onClick={() => setActiveTab('budgets')}>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform duration-200">
-                      <PieChart className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Set Budget</p>
-                      <p className="text-xs text-fg-muted">Manage limits</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="hover:shadow-soft-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer group" onClick={() => setActiveTab('goals')}>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-purple-500/10 text-purple-500 group-hover:scale-110 transition-transform duration-200">
-                      <Target className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">New Goal</p>
-                      <p className="text-xs text-fg-muted">Save for targets</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                const colorClasses = {
+                  success: 'bg-success-subtle text-success group-hover:bg-success group-hover:text-success-foreground',
+                  destructive: 'bg-destructive-subtle text-destructive group-hover:bg-destructive group-hover:text-destructive-foreground',
+                  accent: 'bg-accent-subtle text-accent group-hover:bg-accent group-hover:text-white',
+                  warning: 'bg-warning-subtle text-warning group-hover:bg-warning group-hover:text-warning-foreground',
+                };
+                
+                return (
+                  <Card 
+                    key={action.id}
+                    isInteractive 
+                    className="group"
+                    onClick={() => setActiveTab(action.tab as TabType)}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          'p-3 rounded-[var(--radius)] transition-fast',
+                          colorClasses[action.color]
+                        )}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-body-sm font-semibold text-foreground">{action.label}</p>
+                          <p className="text-caption text-fg-muted">{action.description}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
 
             {/* Main Content Grid */}
@@ -162,7 +154,7 @@ export function Finance() {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2.5 text-lg">
+                    <CardTitle className="flex items-center gap-2">
                       <CreditCard className="w-4 h-4 text-fg-muted" />
                       Accounts
                     </CardTitle>
@@ -175,7 +167,7 @@ export function Finance() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2.5 text-lg">
+                    <CardTitle className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4 text-fg-muted" />
                       Income Sources
                     </CardTitle>
@@ -191,7 +183,7 @@ export function Finance() {
               <div className="lg:col-span-2 space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2.5 text-lg">
+                    <CardTitle className="flex items-center gap-2">
                       <Receipt className="w-4 h-4 text-fg-muted" />
                       Recent Transactions
                     </CardTitle>
@@ -204,7 +196,7 @@ export function Finance() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2.5 text-lg">
+                    <CardTitle className="flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-fg-muted" />
                       Spending Overview
                     </CardTitle>
@@ -224,7 +216,7 @@ export function Finance() {
             <div className="space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Add Transaction</CardTitle>
+                  <CardTitle>Add Transaction</CardTitle>
                   <CardDescription>Record a new income or expense</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -234,7 +226,7 @@ export function Finance() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Categories</CardTitle>
+                  <CardTitle>Categories</CardTitle>
                   <CardDescription>Manage expense categories</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -246,7 +238,7 @@ export function Finance() {
             <div className="lg:col-span-2">
               <Card className="h-full">
                 <CardHeader>
-                  <CardTitle className="text-lg">All Transactions</CardTitle>
+                  <CardTitle>All Transactions</CardTitle>
                   <CardDescription>View and manage your transaction history</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -262,7 +254,7 @@ export function Finance() {
             <div>
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Create Budget</CardTitle>
+                  <CardTitle>Create Budget</CardTitle>
                   <CardDescription>Set a new spending limit</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -274,7 +266,7 @@ export function Finance() {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2.5 text-lg">
+                  <CardTitle className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-fg-muted" />
                     Budget Status
                   </CardTitle>
@@ -287,7 +279,7 @@ export function Finance() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Recurring Transactions</CardTitle>
+                  <CardTitle>Recurring Transactions</CardTitle>
                   <CardDescription>Manage scheduled payments</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -303,7 +295,7 @@ export function Finance() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Cash Flow</CardTitle>
+                  <CardTitle>Cash Flow</CardTitle>
                   <CardDescription>Visualize money movement</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -313,7 +305,7 @@ export function Finance() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Category Heatmap</CardTitle>
+                  <CardTitle>Category Heatmap</CardTitle>
                   <CardDescription>Spending patterns by category</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -325,7 +317,7 @@ export function Finance() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Month Comparison</CardTitle>
+                  <CardTitle>Month Comparison</CardTitle>
                   <CardDescription>Compare spending month over month</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -335,7 +327,7 @@ export function Finance() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Investment Portfolio</CardTitle>
+                  <CardTitle>Investment Portfolio</CardTitle>
                   <CardDescription>Track your investments</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -346,7 +338,7 @@ export function Finance() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Detailed Trends</CardTitle>
+                <CardTitle>Detailed Trends</CardTitle>
                 <CardDescription>Comprehensive spending analysis</CardDescription>
               </CardHeader>
               <CardContent>
@@ -360,7 +352,7 @@ export function Finance() {
           <div className="max-w-4xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2.5 text-lg">
+                <CardTitle className="flex items-center gap-2">
                   <PiggyBank className="w-4 h-4 text-fg-muted" />
                   Financial Goals
                 </CardTitle>

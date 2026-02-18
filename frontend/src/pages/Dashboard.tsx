@@ -1,13 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layout } from '../components/Layout';
 import { api } from '../api';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Badge } from '../components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { RefreshCw, Plus, Layout as LayoutIcon, BarChart3, TrendingUp, Activity, DollarSign, Target, BookOpen, Smile } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select';
+import { Badge } from '../components/ui/Badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/Tabs';
+import { Skeleton, StatCardSkeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
+import { cn } from '../lib/utils';
+import { 
+  RefreshCw, 
+  Plus, 
+  Layout as LayoutIcon, 
+  BarChart3, 
+  TrendingUp, 
+  Activity, 
+  DollarSign, 
+  Target, 
+  BookOpen, 
+  Smile,
+  Zap,
+} from 'lucide-react';
 
 interface Widget {
   id: string;
@@ -97,11 +111,40 @@ export function Dashboard() {
     }
   };
 
+  const getDataSourceIcon = (dataSource: string) => {
+    const iconClass = "w-5 h-5";
+    switch (dataSource) {
+      case 'tasks': return <Target className={iconClass} />;
+      case 'habits': return <Activity className={iconClass} />;
+      case 'mood': return <Smile className={iconClass} />;
+      case 'health_sleep':
+      case 'health_exercise':
+      case 'health_water': return <Activity className={iconClass} />;
+      case 'finance': return <DollarSign className={iconClass} />;
+      case 'journal': return <BookOpen className={iconClass} />;
+      default: return <BarChart3 className={iconClass} />;
+    }
+  };
+
+  const getDataSourceColor = (dataSource: string) => {
+    switch (dataSource) {
+      case 'tasks': return 'text-accent bg-accent-subtle';
+      case 'habits': return 'text-success bg-success-subtle';
+      case 'mood': return 'text-warning bg-warning-subtle';
+      case 'finance': return 'text-success bg-success-subtle';
+      default: return 'text-fg-muted bg-bg-subtle';
+    }
+  };
+
   const renderWidget = (widget: Widget) => {
     const data = dashboardData[widget.id];
     
     if (!data && widget.widget_type !== 'list') {
-      return <div className="text-gray-500">No data available</div>;
+      return (
+        <div className="flex items-center justify-center h-24 text-fg-muted">
+          <p className="text-sm">No data available</p>
+        </div>
+      );
     }
 
     switch (widget.widget_type) {
@@ -119,25 +162,31 @@ export function Dashboard() {
       case 'comparison_view':
         return renderComparisonView(widget, data);
       default:
-        return <div>Unknown widget type: {widget.widget_type}</div>;
+        return (
+          <div className="flex items-center justify-center h-24 text-fg-muted">
+            <p className="text-sm">Unknown widget type: {widget.widget_type}</p>
+          </div>
+        );
     }
   };
 
   const renderMetricCard = (widget: Widget, data: any) => {
     const icon = getDataSourceIcon(widget.data_source);
+    const colorClass = getDataSourceColor(widget.data_source);
     
     return (
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-3 rounded-lg bg-primary/10">
-            {icon}
-          </div>
-          <div>
-            <p className="text-sm text-gray-600">{widget.title}</p>
-            <p className="text-2xl font-bold">
-              {data?.value ?? '-'} <span className="text-sm font-normal text-gray-500">{data?.unit || ''}</span>
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <div className={cn("p-3 rounded-[var(--radius)]", colorClass)}>
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-caption">{widget.title}</p>
+          <p className="text-metric-sm mt-0.5">
+            {data?.value ?? '-'} 
+            <span className="text-body-sm font-normal text-fg-muted ml-1">
+              {data?.unit || ''}
+            </span>
+          </p>
         </div>
       </div>
     );
@@ -148,18 +197,18 @@ export function Dashboard() {
     
     return (
       <div className="space-y-4">
-        <div className="h-48 flex items-end space-x-2">
+        <div className="h-40 flex items-end gap-1.5">
           {chartData.slice(-7).map((item: any, index: number) => {
-            const maxValue = Math.max(...chartData.map((d: any) => d.value));
+            const maxValue = Math.max(...chartData.map((d: any) => d.value), 1);
             const height = maxValue > 0 ? (item.value / maxValue) * 100 : 0;
             
             return (
-              <div key={index} className="flex-1 flex flex-col items-center">
+              <div key={index} className="flex-1 flex flex-col items-center gap-1.5">
                 <div 
-                  className="w-full bg-primary rounded-t transition-all hover:bg-primary/80"
-                  style={{ height: `${height}%` }}
+                  className="w-full bg-accent/80 rounded-t-[var(--radius-sm)] transition-all hover:bg-accent"
+                  style={{ height: `${Math.max(height, 4)}%` }}
                 />
-                <p className="text-xs text-gray-500 mt-1 rotate-45 origin-left truncate w-12">
+                <p className="text-caption text-fg-subtle truncate w-full text-center">
                   {item.date?.split('-').slice(1).join('/')}
                 </p>
               </div>
@@ -173,20 +222,28 @@ export function Dashboard() {
   const renderProgressBar = (widget: Widget, data: any) => {
     const value = data?.value ?? 0;
     const total = data?.total ?? 100;
-    const percentage = total > 0 ? (value / total) * 100 : 0;
+    const percentage = total > 0 ? Math.min(100, (value / total) * 100) : 0;
     
     return (
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span>{widget.title}</span>
-          <span className="font-medium">{percentage.toFixed(0)}%</span>
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <span className="text-body-sm text-foreground">{widget.title}</span>
+          <Badge variant={percentage >= 80 ? 'success' : percentage >= 50 ? 'default' : 'warning'}>
+            {percentage.toFixed(0)}%
+          </Badge>
         </div>
-        <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-bg-subtle rounded-full overflow-hidden">
           <div 
-            className="h-full bg-primary transition-all"
+            className={cn(
+              "h-full rounded-full transition-all duration-slow",
+              percentage >= 80 ? 'bg-success' : percentage >= 50 ? 'bg-accent' : 'bg-warning'
+            )}
             style={{ width: `${percentage}%` }}
           />
         </div>
+        <p className="text-caption text-fg-subtle">
+          {value} of {total}
+        </p>
       </div>
     );
   };
@@ -194,8 +251,8 @@ export function Dashboard() {
   const renderList = (widget: Widget, data: any) => {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-gray-600">{widget.title}</p>
-        <p className="text-gray-500">List view widget</p>
+        <p className="text-body-sm text-foreground">{widget.title}</p>
+        <p className="text-caption text-fg-muted">List view widget</p>
       </div>
     );
   };
@@ -203,8 +260,8 @@ export function Dashboard() {
   const renderCorrelationChart = (widget: Widget, data: any) => {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-gray-600">{widget.title}</p>
-        <p className="text-gray-500">Correlation chart</p>
+        <p className="text-body-sm text-foreground">{widget.title}</p>
+        <p className="text-caption text-fg-muted">Correlation chart</p>
       </div>
     );
   };
@@ -212,152 +269,149 @@ export function Dashboard() {
   const renderComparisonView = (widget: Widget, data: any) => {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-gray-600">{widget.title}</p>
-        <p className="text-gray-500">Comparison view</p>
+        <p className="text-body-sm text-foreground">{widget.title}</p>
+        <p className="text-caption text-fg-muted">Comparison view</p>
       </div>
     );
-  };
-
-  const getDataSourceIcon = (dataSource: string) => {
-    switch (dataSource) {
-      case 'tasks':
-        return <Target className="h-6 w-6" />;
-      case 'habits':
-        return <Activity className="h-6 w-6" />;
-      case 'mood':
-        return <Smile className="h-6 w-6" />;
-      case 'health_sleep':
-        return <Activity className="h-6 w-6" />;
-      case 'health_exercise':
-        return <Activity className="h-6 w-6" />;
-      case 'health_water':
-        return <Activity className="h-6 w-6" />;
-      case 'finance':
-        return <DollarSign className="h-6 w-6" />;
-      case 'journal':
-        return <BookOpen className="h-6 w-6" />;
-      default:
-        return <BarChart3 className="h-6 w-6" />;
-    }
   };
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="page-container space-y-8">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-10" />
+          </div>
         </div>
-      </Layout>
+
+        {/* Stats Skeleton */}
+        <StatCardSkeleton count={4} />
+
+        {/* Widgets Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-5 space-y-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-12 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="container mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-gray-600 mt-1">
-              {currentDashboard?.description || 'Track your productivity and wellness'}
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1d">Last 24h</SelectItem>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={refreshDashboard}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button onClick={() => navigate('/dashboard/custom')}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Dashboard
-            </Button>
-          </div>
+    <div className="page-container space-y-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-h1">Dashboard</h1>
+          <p className="text-body mt-1">
+            {currentDashboard?.description || 'Track your productivity and wellness'}
+          </p>
         </div>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={loadDashboard}>
-          <TabsList>
-            <TabsTrigger value="master">
-              <LayoutIcon className="h-4 w-4 mr-2" />
-              Master
-            </TabsTrigger>
-            <TabsTrigger value="tasks">
-              <Target className="h-4 w-4 mr-2" />
-              Tasks
-            </TabsTrigger>
-            <TabsTrigger value="habits">
-              <Activity className="h-4 w-4 mr-2" />
-              Habits
-            </TabsTrigger>
-            <TabsTrigger value="health">
-              <Activity className="h-4 w-4 mr-2" />
-              Health
-            </TabsTrigger>
-            <TabsTrigger value="finance">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Finance
-            </TabsTrigger>
-            <TabsTrigger value="productivity">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Productivity
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab} className="mt-6">
-            {currentDashboard && currentDashboard.widgets.length > 0 ? (
-              <div className="grid grid-cols-12 gap-6">
-                {currentDashboard.widgets
-                  .filter(w => w.is_visible)
-                  .map(widget => (
-                    <Card
-                      key={widget.id}
-                      className="col-span-12 md:col-span-6 lg:col-span-3 xl:col-span-4"
-                      style={{ gridColumn: `span ${widget.width}` }}
-                    >
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base">
-                          {widget.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {renderWidget(widget)}
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No widgets configured</h3>
-                  <p className="text-gray-600 mb-4">
-                    Add widgets to visualize your data
-                  </p>
-                  <Button onClick={() => navigate('/dashboard/custom')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Widgets
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+        <div className="flex items-center gap-3">
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1d">Last 24h</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={refreshDashboard}
+            disabled={refreshing}
+            className={refreshing ? 'animate-spin' : ''}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+          <Button onClick={() => navigate('/dashboard/custom')}>
+            <Plus className="w-4 h-4 mr-1.5" />
+            New Dashboard
+          </Button>
+        </div>
       </div>
-    </Layout>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={loadDashboard}>
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="master" className="gap-2">
+            <LayoutIcon className="w-4 h-4" />
+            Master
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="gap-2">
+            <Target className="w-4 h-4" />
+            Tasks
+          </TabsTrigger>
+          <TabsTrigger value="habits" className="gap-2">
+            <Activity className="w-4 h-4" />
+            Habits
+          </TabsTrigger>
+          <TabsTrigger value="health" className="gap-2">
+            <Zap className="w-4 h-4" />
+            Health
+          </TabsTrigger>
+          <TabsTrigger value="finance" className="gap-2">
+            <DollarSign className="w-4 h-4" />
+            Finance
+          </TabsTrigger>
+          <TabsTrigger value="productivity" className="gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Productivity
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-6">
+          {currentDashboard && currentDashboard.widgets.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {currentDashboard.widgets
+                .filter(w => w.is_visible)
+                .map(widget => (
+                  <Card 
+                    key={widget.id}
+                    isHoverable
+                    className="overflow-hidden"
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-body font-medium">
+                        {widget.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      {renderWidget(widget)}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<BarChart3 className="w-12 h-12" strokeWidth={1} />}
+              title="No widgets configured"
+              description="Add widgets to visualize your data and track your progress"
+              action={
+                <Button onClick={() => navigate('/dashboard/custom')}>
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  Add Widgets
+                </Button>
+              }
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

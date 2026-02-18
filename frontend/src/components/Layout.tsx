@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -20,6 +20,8 @@ import {
   Moon,
   Smile,
   Zap,
+  Menu,
+  X,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -41,14 +43,32 @@ const navItems = [
 
 export function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
   const location = useLocation();
 
+  // Initialize dark mode on mount
+  useEffect(() => {
+    const isDark = localStorage.getItem('theme') === 'dark' || 
+      (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+      setDarkMode(true);
+    }
+  }, []);
+
   const toggleTheme = () => {
-    document.documentElement.classList.toggle('dark');
-    setDarkMode((d) => !d);
+    const newDarkMode = !darkMode;
+    document.documentElement.classList.toggle('dark', newDarkMode);
+    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
+    setDarkMode(newDarkMode);
   };
 
   const logout = () => {
@@ -56,132 +76,200 @@ export function Layout() {
     window.location.href = '/login';
   };
 
+  const sidebarWidth = sidebarCollapsed ? 'w-sidebar-collapsed' : 'w-sidebar';
+
   return (
     <div className="min-h-screen bg-background flex">
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 h-screen border-r border-border bg-bg-elevated transition-smooth flex flex-col',
-          sidebarCollapsed ? 'w-[var(--sidebar-collapsed)]' : 'w-[var(--sidebar-width)]'
+          'fixed left-0 top-0 z-50 h-screen border-r border-border bg-bg-elevated transition-all duration-fast flex flex-col',
+          sidebarWidth,
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
-        <div className="flex h-[var(--header-height)] items-center px-3 border-b border-border">
-          {!sidebarCollapsed && (
-            <span className="text-lg font-semibold tracking-tight text-foreground">
-              Productivity
-            </span>
-          )}
+        {/* Logo Area */}
+        <div className="flex h-header items-center px-4 border-b border-border">
+          <div className={cn(
+            'flex items-center gap-3 flex-1',
+            sidebarCollapsed && 'justify-center'
+          )}>
+            <div className="w-8 h-8 rounded-[var(--radius)] bg-foreground text-background flex items-center justify-center">
+              <Zap className="w-5 h-5" />
+            </div>
+            {!sidebarCollapsed && (
+              <span className="text-h4 tracking-tight text-foreground">
+                Productivity
+              </span>
+            )}
+          </div>
+          
+          {/* Mobile close button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="lg:hidden p-2 -mr-2 text-fg-muted hover:text-foreground"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
           {navItems.map(({ to, label, icon: Icon }) => {
-            const isActive = location.pathname === to;
+            const isActive = location.pathname === to || location.pathname.startsWith(`${to}/`);
             return (
               <Link
                 key={label}
                 to={to}
+                onClick={() => setMobileMenuOpen(false)}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-smooth',
+                  'flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium transition-fast',
+                  sidebarCollapsed && 'justify-center px-2',
                   isActive
                     ? 'bg-bg-subtle text-foreground'
                     : 'text-fg-muted hover:bg-bg-subtle hover:text-foreground'
                 )}
+                title={sidebarCollapsed ? label : undefined}
               >
-                <Icon className="size-5 shrink-0" strokeWidth={1.5} />
+                <Icon className="w-5 h-5 shrink-0" strokeWidth={1.5} />
                 {!sidebarCollapsed && <span>{label}</span>}
               </Link>
             );
           })}
         </nav>
-        <button
-          type="button"
-          onClick={() => setSidebarCollapsed((c) => !c)}
-          className="flex items-center justify-center h-10 border-t border-border text-fg-muted hover:text-foreground hover:bg-bg-subtle transition-smooth"
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="size-5" />
-          ) : (
-            <ChevronLeft className="size-5" />
-          )}
-        </button>
+
+        {/* Sidebar Footer */}
+        <div className="border-t border-border p-2">
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            className={cn(
+              'flex items-center gap-2 w-full rounded-[var(--radius-sm)] px-3 py-2 text-fg-muted hover:text-foreground hover:bg-bg-subtle transition-fast',
+              sidebarCollapsed && 'justify-center'
+            )}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <>
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-sm">Collapse</span>
+              </>
+            )}
+          </button>
+        </div>
       </aside>
 
+      {/* Main Content Area */}
       <div
         className={cn(
-          'flex-1 flex flex-col min-w-0 transition-smooth',
-          sidebarCollapsed ? 'pl-[var(--sidebar-collapsed)]' : 'pl-[var(--sidebar-width)]'
+          'flex-1 flex flex-col min-w-0 transition-all duration-fast',
+          'lg:pl-sidebar',
+          sidebarCollapsed && 'lg:pl-sidebar-collapsed'
         )}
       >
         {/* Header */}
-        <header className="sticky top-0 z-30 flex h-[var(--header-height)] items-center gap-4 border-b border-border bg-bg-elevated/80 backdrop-blur-sm px-6">
+        <header className="sticky top-0 z-30 flex h-header items-center gap-4 border-b border-border bg-bg-elevated/80 backdrop-blur-xl px-4 lg:px-6">
+          {/* Mobile menu button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-2 -ml-2 rounded-[var(--radius-sm)] text-fg-muted hover:text-foreground hover:bg-bg-subtle"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
+          {/* Search */}
           <div
             className={cn(
-              'flex-1 max-w-md flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 transition-smooth',
-              searchFocused && 'ring-2 ring-ring ring-offset-2 ring-offset-background'
+              'flex-1 max-w-md flex items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-background px-3 py-2 transition-fast',
+              searchFocused && 'border-border-hover ring-2 ring-ring/20'
             )}
           >
-            <Search className="size-4 text-fg-muted shrink-0" strokeWidth={1.5} />
+            <Search className="w-4 h-4 text-fg-subtle shrink-0" strokeWidth={1.5} />
             <input
               type="search"
               placeholder="Search tasks, notes, events..."
-              className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:fg-muted outline-none"
+              className="flex-1 min-w-0 bg-transparent text-sm text-foreground placeholder:text-fg-subtle outline-none"
               onFocus={() => setSearchFocused(true)}
               onBlur={() => setSearchFocused(false)}
             />
           </div>
 
+          {/* Right side actions */}
           <div className="flex items-center gap-1">
+            {/* Theme toggle */}
             <button
               type="button"
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-fg-muted hover:text-foreground hover:bg-bg-subtle transition-smooth"
+              className="p-2 rounded-[var(--radius-sm)] text-fg-muted hover:text-foreground hover:bg-bg-subtle transition-fast"
               aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {darkMode ? <Sun className="size-4" strokeWidth={1.5} /> : <Moon className="size-4" strokeWidth={1.5} />}
+              {darkMode ? (
+                <Sun className="w-4 h-4" strokeWidth={1.5} />
+              ) : (
+                <Moon className="w-4 h-4" strokeWidth={1.5} />
+              )}
             </button>
+
+            {/* Profile dropdown */}
             <div className="relative">
-            <button
-              type="button"
-              onClick={() => setProfileOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-lg p-1.5 text-fg-muted hover:bg-bg-subtle hover:text-foreground transition-smooth"
-              aria-expanded={profileOpen}
-              aria-haspopup="true"
-            >
-              <div className="size-8 rounded-full bg-bg-subtle flex items-center justify-center border border-border">
-                <User className="size-4" strokeWidth={1.5} />
-              </div>
-            </button>
-            {profileOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  aria-hidden="true"
-                  onClick={() => setProfileOpen(false)}
-                />
-                <div
-                  className="absolute right-0 top-full mt-1 w-56 rounded-lg border border-border bg-bg-elevated shadow-soft-lg py-1 z-50"
-                  role="menu"
-                >
-                  <div className="px-3 py-2 border-b border-border">
-                    <p className="text-sm font-medium text-foreground">Account</p>
-                    <p className="text-xs text-fg-muted">Signed in</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-bg-subtle transition-smooth"
-                    role="menuitem"
-                  >
-                    <LogOut className="size-4" strokeWidth={1.5} />
-                    Log out
-                  </button>
+              <button
+                type="button"
+                onClick={() => setProfileOpen((o) => !o)}
+                className="flex items-center gap-2 rounded-[var(--radius-sm)] p-1.5 text-fg-muted hover:bg-bg-subtle hover:text-foreground transition-fast"
+                aria-expanded={profileOpen}
+                aria-haspopup="true"
+              >
+                <div className="w-8 h-8 rounded-full bg-bg-subtle flex items-center justify-center border border-border">
+                  <User className="w-4 h-4" strokeWidth={1.5} />
                 </div>
-              </>
-            )}
+              </button>
+
+              {profileOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    aria-hidden="true"
+                    onClick={() => setProfileOpen(false)}
+                  />
+                  {/* Dropdown */}
+                  <div
+                    className="absolute right-0 top-full mt-2 w-56 rounded-[var(--radius)] border border-border bg-bg-elevated shadow-lg py-1 z-50 animate-fade-in"
+                    role="menu"
+                  >
+                    <div className="px-3 py-2 border-b border-border">
+                      <p className="text-sm font-medium text-foreground">Account</p>
+                      <p className="text-caption">Signed in</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-bg-subtle transition-fast"
+                      role="menuitem"
+                    >
+                      <LogOut className="w-4 h-4" strokeWidth={1.5} />
+                      Log out
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
 
+        {/* Page Content */}
         <main className="flex-1 overflow-auto">
           <Outlet />
         </main>
