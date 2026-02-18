@@ -20,8 +20,8 @@ export function Login() {
     
     try {
       const response = await authApi.login(email, password);
-      localStorage.setItem('token', response.data.token);
-      navigate('/today');
+      localStorage.setItem('token', response.data.access);
+      navigate('/dashboard');
     } catch (err) {
       setError('Invalid credentials. Please try again.');
     } finally {
