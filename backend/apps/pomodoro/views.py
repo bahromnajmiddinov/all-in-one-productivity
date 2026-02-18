@@ -29,6 +29,7 @@ from .serializers import (
     ProjectAnalyticsSerializer,
     ProductivityScoreSerializer,
 )
+from apps.tasks.models import TaskTimeLog
 
 
 class PomodoroSettingsViewSet(viewsets.ModelViewSet):
@@ -92,6 +93,20 @@ class PomodoroSessionViewSet(viewsets.ModelViewSet):
         session.completed = True
         session.ended_at = timezone.now()
         session.save()
+
+        if session.session_type == 'work' and session.task:
+            TaskTimeLog.objects.get_or_create(
+                pomodoro_session=session,
+                defaults={
+                    'user': session.user,
+                    'task': session.task,
+                    'source': 'pomodoro',
+                    'minutes': session.duration,
+                    'started_at': session.started_at,
+                    'ended_at': session.ended_at,
+                    'notes': session.notes,
+                },
+            )
         
         # Update streak for completed work sessions
         if session.session_type == 'work':

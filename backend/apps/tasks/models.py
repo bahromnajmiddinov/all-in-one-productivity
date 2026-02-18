@@ -1,7 +1,6 @@
 import uuid
 from django.db import models
 from django.conf import settings
-from django.utils import timezone
 
 class Project(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -81,3 +80,34 @@ class TaskTag(models.Model):
 
     class Meta:
         unique_together = ['task', 'tag']
+
+
+class TaskTimeLog(models.Model):
+    SOURCE_CHOICES = [
+        ('pomodoro', 'Pomodoro'),
+        ('manual', 'Manual'),
+        ('calendar', 'Calendar'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='task_time_logs')
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='time_logs')
+    pomodoro_session = models.ForeignKey(
+        'pomodoro.PomodoroSession',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='task_time_logs',
+    )
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='manual')
+    minutes = models.PositiveIntegerField()
+    started_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.task.title} - {self.minutes}m"

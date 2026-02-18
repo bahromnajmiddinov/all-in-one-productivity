@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Sum
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, filters, status
@@ -8,9 +8,10 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.pomodoro.models import PomodoroSession
-from .models import Project, Task, Tag
-from .serializers import ProjectSerializer, TaskSerializer, TagSerializer
+from apps.habits.models import HabitCompletion
+from apps.automation.models import TaskHabitLink
+from .models import Project, Task, Tag, TaskTimeLog
+from .serializers import ProjectSerializer, TaskSerializer, TagSerializer, TaskTimeLogSerializer
 
 
 def next_recurrence_date(rule, from_date):
@@ -79,6 +80,24 @@ class TaskViewSet(viewsets.ModelViewSet):
         task.status = 'completed'
         task.completed_at = timezone.now()
         task.save()
+        # Create habit completions for linked habits
+        links = TaskHabitLink.objects.filter(user=task.user, task=task, trigger_on_complete=True)
+        completion_date = task.completed_at.date()
+        for link in links:
+            link_completion_date = completion_date
+            if link.completion_source == 'due_date' and task.due_date:
+                link_completion_date = task.due_date
+            time_of_day_minutes = task.completed_at.hour * 60 + task.completed_at.minute
+            completion, created = HabitCompletion.objects.get_or_create(
+                habit=link.habit,
+                date=link_completion_date,
+                defaults={'completed': True, 'time_of_day_minutes': time_of_day_minutes},
+            )
+            if not created and not completion.completed:
+                completion.completed = True
+                completion.time_of_day_minutes = time_of_day_minutes
+                completion.save(update_fields=['completed', 'time_of_day_minutes'])
+            link.habit.recalc_stats()
         # Create next occurrence for recurring tasks
         rule = task.recurrence_rule
         from_date = task.due_date or timezone.now().date()
@@ -201,11 +220,9 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'])
     def time_logged(self, request, pk=None):
-        """Total focus time logged for this task via Pomodoro sessions."""
+        """Total focus time logged for this task."""
         task = self.get_object()
-        total = PomodoroSession.objects.filter(
-            task=task, session_type='work', completed=True
-        ).aggregate(s=Sum('duration'))['s'] or 0
+        total = TaskTimeLog.objects.filter(task=task).aggregate(s=Sum('minutes'))['s'] or 0
         return Response({'minutes': total})
 
     @action(detail=True, methods=['post'])
@@ -265,6 +282,21 @@ class TagViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Tag.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class TaskTimeLogViewSet(viewsets.ModelViewSet):
+    serializer_class = TaskTimeLogSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['task', 'source']
+    ordering_fields = ['created_at', 'minutes', 'started_at']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        return TaskTimeLog.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

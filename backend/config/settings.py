@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apps.mood',
     'apps.dashboard',
     'apps.analytics',
+    'apps.automation',
 ]
 
 MIDDLEWARE = [

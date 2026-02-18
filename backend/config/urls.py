@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from apps.pomodoro.views import PomodoroSettingsViewSet
-from apps.tasks.views import ProjectViewSet, TaskViewSet, TagViewSet
+from apps.tasks.views import ProjectViewSet, TaskViewSet, TagViewSet, TaskTimeLogViewSet
 from apps.calendar.views import CalendarEventViewSet, CalendarPreferenceViewSet, CalendarViewSet
 from apps.dashboard.views import (
     DashboardViewSet,
@@ -47,6 +47,7 @@ router = DefaultRouter()
 router.register(r'projects', ProjectViewSet, basename='project')
 router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'tags', TagViewSet, basename='tag')
+router.register(r'tasks/time-logs', TaskTimeLogViewSet, basename='task-time-log')
 router.register(r'dashboard', DashboardViewSet, basename='dashboard')
 router.register(r'dashboard/widgets', DashboardWidgetViewSet, basename='dashboard-widget')
 router.register(r'dashboard/preferences', DashboardPreferenceViewSet, basename='dashboard-preference')
@@ -105,4 +106,5 @@ urlpatterns = [
     path('api/v1/mood/', include('apps.mood.urls')),
     path('api/v1/', include('apps.dashboard.urls')),
     path('api/v1/analytics/', include('apps.analytics.urls')),
+    path('api/v1/automation/', include('apps.automation.urls')),
 ]
