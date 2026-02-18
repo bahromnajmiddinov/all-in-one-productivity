@@ -12,7 +12,8 @@ import { HabitStackManager } from '../components/habits/HabitStackManager';
 import { HabitCategoryManager } from '../components/habits/HabitCategoryManager';
 import { Button } from '../components/ui/Button';
 import { EmptyState } from '../components/ui/EmptyState';
-import { Plus, Target } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog';
+import { Plus, Target, TrendingUp, Calendar, Zap } from 'lucide-react';
 import type { Habit, HabitCategory } from '../types/habits';
 
 export function Habits() {
@@ -52,7 +53,7 @@ export function Habits() {
       }
       setShowForm(false);
       setEditing(null);
-      load();
+      await load();
     } catch (e) {
       console.error('Failed to save habit', e);
     }
@@ -62,7 +63,7 @@ export function Habits() {
     if (!confirm('Delete this habit?')) return;
     try {
       await habitApi.deleteHabit(id);
-      load();
+      await load();
     } catch (e) {
       console.error('Failed to delete habit', e);
     }
@@ -71,7 +72,7 @@ export function Habits() {
   const handleCreateCategory = async (name: string) => {
     try {
       await habitApi.createCategory({ name });
-      load();
+      await load();
     } catch (e) {
       console.error('Failed to create category', e);
     }
@@ -81,62 +82,91 @@ export function Habits() {
     if (!confirm('Delete this category?')) return;
     try {
       await habitApi.deleteCategory(id);
-      load();
+      await load();
     } catch (e) {
       console.error('Failed to delete category', e);
     }
   };
 
+  const handleAddClick = () => {
+    setEditing(null);
+    setShowForm(true);
+  };
+
+  const handleEditClick = (habit: Habit) => {
+    setEditing(habit);
+    setShowForm(true);
+  };
+
+  const handleDialogClose = () => {
+    setShowForm(false);
+    setEditing(null);
+  };
+
   return (
-    <div className="p-6 md:p-8 max-w-content mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="page-container">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-h1">Habits</h1>
-          <p className="text-body mt-1">Track daily and weekly habits with streaks.</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-[var(--radius)] bg-success-subtle text-success">
+              <Target className="w-5 h-5" />
+            </div>
+            <h1 className="text-h1">Habits</h1>
+          </div>
+          <p className="text-body max-w-2xl">
+            Track daily and weekly habits with streaks. Build consistency and achieve your goals 
+            through positive habit formation.
+          </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setShowForm(true);
-          }}
-          className="gap-2"
-        >
-          <Plus className="size-4" strokeWidth={1.5} />
-          Add habit
+        <Button onClick={handleAddClick} className="flex-shrink-0">
+          <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+          Add Habit
         </Button>
       </div>
 
-      <section className="mb-8">
-        <h2 className="text-h3 mb-4">Today</h2>
+      {/* Today's Habits */}
+      <section className="section-gap-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-4 h-4 text-fg-muted" />
+          <h2 className="text-h3">Today</h2>
+        </div>
         <HabitList />
       </section>
 
-      <section className="mb-8">
-        <h2 className="text-h3 mb-4">All habits</h2>
-        {showForm && (
-          <div className="mb-6">
-            <HabitForm
-              key={editing?.id ?? 'new'}
-              initial={editing ?? undefined}
-              categories={categories}
-              onSave={handleSave}
-              onCancel={() => {
-                setShowForm(false);
-                setEditing(null);
-              }}
-            />
-          </div>
-        )}
+      {/* All Habits */}
+      <section className="section-gap-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Target className="w-4 h-4 text-fg-muted" />
+          <h2 className="text-h3">All Habits</h2>
+        </div>
+
         {loading ? (
-          <p className="text-body text-fg-muted">Loading...</p>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-14 bg-bg-subtle rounded-[var(--radius)] animate-pulse" />
+            ))}
+          </div>
+        ) : allHabits.length === 0 ? (
+          <EmptyState
+            icon={<Target className="w-10 h-10" strokeWidth={1} />}
+            title="No habits yet"
+            description="Create a habit to start tracking consistency and streaks."
+            action={
+              <Button onClick={handleAddClick}>
+                <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
+                Add Habit
+              </Button>
+            }
+          />
         ) : (
-          <ul className="space-y-2">
+          <div className="space-y-2">
             {allHabits.map((h) => (
-              <li
+              <div
                 key={h.id}
-                className="flex items-center justify-between rounded-[var(--radius)] border border-border bg-bg-elevated px-4 py-3 shadow-soft transition-smooth hover:border-border/80"
+                className="flex items-center justify-between rounded-[var(--radius)] border border-border bg-bg-elevated px-4 py-3 shadow-card transition-fast hover:shadow-card-hover hover:border-border-hover"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">{h.name}</p>
                   <p className="text-caption mt-0.5">
                     {h.frequency === 'weekly'
@@ -149,47 +179,67 @@ export function Habits() {
                     Streak {h.current_streak} · Best {h.longest_streak}
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing(h); setShowForm(true); }}>
+                <div className="flex gap-2 flex-shrink-0">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleEditClick(h)}
+                  >
                     Edit
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(h.id)}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive" 
+                    onClick={() => handleDelete(h.id)}
+                  >
                     Delete
                   </Button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
-        )}
-        {!loading && allHabits.length === 0 && !showForm && (
-          <EmptyState
-            icon={<Target className="size-10" strokeWidth={1} />}
-            title="No habits yet"
-            description="Create a habit to start tracking consistency and streaks."
-            action={
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
-                Add habit
-              </Button>
-            }
-          />
+          </div>
         )}
       </section>
 
-      <section className="mb-8">
+      {/* Analytics */}
+      <section className="section-gap-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-4 h-4 text-fg-muted" />
+          <h2 className="text-h3">Analytics</h2>
+        </div>
         <HabitAnalyticsDashboard />
       </section>
 
-      <section className="mb-8 grid gap-6 lg:grid-cols-2">
-        <HabitTimeOfDayInsights />
-        <HabitChains />
+      {/* Grid Sections */}
+      <section className="section-gap-sm grid gap-6 lg:grid-cols-2">
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-4 h-4 text-fg-muted" />
+            <h2 className="text-h3">Time of Day Insights</h2>
+          </div>
+          <HabitTimeOfDayInsights />
+        </div>
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-4 h-4 text-fg-muted" />
+            <h2 className="text-h3">Habit Chains</h2>
+          </div>
+          <HabitChains />
+        </div>
       </section>
 
-      <section className="mb-8">
+      {/* Correlation Matrix */}
+      <section className="section-gap-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-4 h-4 text-fg-muted" />
+          <h2 className="text-h3">Correlation Matrix</h2>
+        </div>
         <HabitCorrelationMatrix />
       </section>
 
-      <section className="mb-8 grid gap-6 lg:grid-cols-2">
+      {/* Stack & Category Managers */}
+      <section className="section-gap-sm grid gap-6 lg:grid-cols-2">
         <HabitStackManager habits={allHabits} />
         <HabitCategoryManager
           categories={categories}
@@ -198,14 +248,41 @@ export function Habits() {
         />
       </section>
 
-      <section className="mb-8">
-        <h2 className="text-h3 mb-4">Monthly view</h2>
+      {/* Monthly View */}
+      <section className="section-gap-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="w-4 h-4 text-fg-muted" />
+          <h2 className="text-h3">Monthly View</h2>
+        </div>
         <HabitCalendar />
       </section>
+
+      {/* Reminders */}
       <section className="mt-8">
-        <h2 className="text-h3 mb-4">Reminders</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <Zap className="w-4 h-4 text-fg-muted" />
+          <h2 className="text-h3">Reminders</h2>
+        </div>
         <HabitReminders />
       </section>
+
+      {/* Habit Form Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Edit Habit' : 'Add New Habit'}</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <HabitForm
+              key={editing?.id ?? 'new'}
+              initial={editing ?? undefined}
+              categories={categories}
+              onSave={handleSave}
+              onCancel={handleDialogClose}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

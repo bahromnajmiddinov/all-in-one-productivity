@@ -2,76 +2,74 @@ import { cn } from '../../lib/utils';
 
 interface CircularProgressProps {
   value: number;
-  size?: 'sm' | 'md' | 'lg';
+  max?: number;
+  size?: number;
   strokeWidth?: number;
-  showValue?: boolean;
-  variant?: 'primary' | 'success' | 'warning' | 'danger';
   className?: string;
+  showValue?: boolean;
+  variant?: 'default' | 'success' | 'warning' | 'destructive';
 }
 
-const sizeConfig = {
-  sm: { size: 40, text: 'text-xs' },
-  md: { size: 56, text: 'text-sm' },
-  lg: { size: 80, text: 'text-base' },
-};
-
-const variantConfig = {
-  primary: { color: '#3B82F6', bgColor: '#1E293B' },
-  success: { color: '#10B981', bgColor: '#1E293B' },
-  warning: { color: '#F59E0B', bgColor: '#1E293B' },
-  danger: { color: '#EF4444', bgColor: '#1E293B' },
-};
-
-export function CircularProgress({ 
-  value, 
-  size = 'md', 
-  strokeWidth = 4, 
+export function CircularProgress({
+  value,
+  max = 100,
+  size = 48,
+  strokeWidth = 4,
+  className,
   showValue = true,
-  variant = 'primary',
-  className 
+  variant = 'default',
 }: CircularProgressProps) {
-  const config = sizeConfig[size];
-  const colors = variantConfig[variant];
-  const radius = (config.size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (value / 100) * circumference;
+  const percentage = Math.min(100, Math.max(0, (value / max) * 100));
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  const colorClasses = {
+    default: 'text-foreground',
+    success: 'text-success',
+    warning: 'text-warning',
+    destructive: 'text-destructive',
+  };
 
   return (
-    <div className={cn('relative inline-flex items-center justify-center', className)}>
+    <div 
+      className={cn('relative inline-flex items-center justify-center', className)}
+      style={{ width: size, height: size }}
+    >
       <svg
-        width={config.size}
-        height={config.size}
-        className="transform -rotate-90"
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
       >
         {/* Background circle */}
         <circle
-          cx={config.size / 2}
-          cy={config.size / 2}
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
-          stroke={colors.bgColor}
+          fill="none"
           strokeWidth={strokeWidth}
-          fill="transparent"
+          className="text-bg-subtle"
+          stroke="currentColor"
         />
         {/* Progress circle */}
         <circle
-          cx={config.size / 2}
-          cy={config.size / 2}
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
-          stroke={colors.color}
+          fill="none"
           strokeWidth={strokeWidth}
-          fill="transparent"
           strokeLinecap="round"
+          className={cn('transition-all duration-slow', colorClasses[variant])}
+          stroke="currentColor"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className="transition-all duration-500 ease-out"
         />
       </svg>
       {showValue && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className={cn('font-semibold text-foreground', config.text)}>
-            {value}%
-          </span>
-        </div>
+        <span className="absolute text-caption font-semibold text-foreground">
+          {Math.round(percentage)}%
+        </span>
       )}
     </div>
   );

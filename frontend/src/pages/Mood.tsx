@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { moodApi } from '../api';
+import { Button } from '../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from '../components/ui/Dialog';
+import { Skeleton, StatCardSkeleton } from '../components/ui/Skeleton';
 import type {
   MoodEntry,
-  MoodScale,
   MoodStats,
   MoodInsight,
-  MoodPattern,
-  EmotionWheelItem,
 } from '../types';
 import {
   LineChart,
@@ -18,10 +20,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
   RadarChart,
   PolarGrid,
   PolarAngleAxis,
@@ -30,26 +28,20 @@ import {
 } from 'recharts';
 import {
   Smile,
-  Frown,
-  Meh,
   TrendingUp,
   TrendingDown,
   Calendar,
-  Clock,
   Activity,
   Lightbulb,
   X,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   BarChart3,
-  PieChartIcon,
   Target,
   Zap,
+  Heart,
 } from 'lucide-react';
-import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
-
-const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+import { format } from 'date-fns';
+import { cn } from '../lib/utils';
 
 const TIME_PERIODS = [
   { value: 7, label: '7 Days' },
@@ -61,17 +53,13 @@ const TIME_PERIODS = [
 export default function Mood() {
   const [activeTab, setActiveTab] = useState<'overview' | 'timeline' | 'patterns' | 'emotions' | 'insights'>('overview');
   const [entries, setEntries] = useState<MoodEntry[]>([]);
-  const [scales, setScales] = useState<MoodScale[]>([]);
   const [stats, setStats] = useState<MoodStats | null>(null);
   const [insights, setInsights] = useState<MoodInsight[]>([]);
-  const [patterns, setPatterns] = useState<MoodPattern[]>([]);
-  const [emotionWheel, setEmotionWheel] = useState<EmotionWheelItem[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState(30);
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false);
   const [quickLogMood, setQuickLogMood] = useState(5);
   const [quickLogNotes, setQuickLogNotes] = useState('');
   const [timelineData, setTimelineData] = useState<any[]>([]);
-  const [heatmapData, setHeatmapData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -81,25 +69,17 @@ export default function Mood() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [entriesRes, scalesRes, statsRes, insightsRes, patternsRes, timelineRes, heatmapRes, wheelRes] = await Promise.all([
-        moodApi.getEntries({ days: selectedPeriod }),
-        moodApi.getScales(),
+      const [entriesRes, statsRes, insightsRes, timelineRes] = await Promise.all([
+        moodApi.getEntries({ start_date: new Date(Date.now() - selectedPeriod * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }),
         moodApi.getStats(),
         moodApi.getInsights(),
-        moodApi.getPatterns(selectedPeriod),
         moodApi.getTimeline(selectedPeriod),
-        moodApi.getHeatmap(new Date().getFullYear()),
-        moodApi.getEmotionWheel(),
       ]);
 
       setEntries(entriesRes.data.results || entriesRes.data);
-      setScales(scalesRes.data.results || scalesRes.data);
       setStats(statsRes.data);
       setInsights(insightsRes.data.results || insightsRes.data);
-      setPatterns(patternsRes.data.patterns || []);
       setTimelineData(timelineRes.data.timeline || []);
-      setHeatmapData(heatmapRes.data || []);
-      setEmotionWheel(wheelRes.data || []);
     } catch (error) {
       console.error('Error fetching mood data:', error);
     } finally {
@@ -153,121 +133,165 @@ export default function Mood() {
     return '😢';
   };
 
-  const getMoodColor = (value: number) => {
-    if (value >= 8) return '#10B981';
-    if (value >= 6) return '#34D399';
-    if (value >= 5) return '#FBBF24';
-    if (value >= 3) return '#F97316';
-    return '#EF4444';
+  const getInsightIcon = (type: string) => {
+    switch (type) {
+      case 'warning':
+        return <TrendingDown className="w-6 h-6 text-destructive" />;
+      case 'achievement':
+        return <TrendingUp className="w-6 h-6 text-success" />;
+      case 'pattern':
+        return <Target className="w-6 h-6 text-accent" />;
+      default:
+        return <Lightbulb className="w-6 h-6 text-warning" />;
+    }
   };
+
+  const getInsightBg = (type: string) => {
+    switch (type) {
+      case 'warning':
+        return 'bg-destructive-subtle border-destructive/20';
+      case 'achievement':
+        return 'bg-success-subtle border-success/20';
+      case 'pattern':
+        return 'bg-accent-subtle border-accent/20';
+      default:
+        return 'bg-warning-subtle border-warning/20';
+    }
+  };
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
+    { id: 'timeline', label: 'Timeline', icon: TrendingUp },
+    { id: 'patterns', label: 'Patterns', icon: Target },
+    { id: 'emotions', label: 'Emotions', icon: Smile },
+    { id: 'insights', label: 'Insights', icon: Lightbulb },
+  ];
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="page-container space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <StatCardSkeleton count={4} />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="page-container space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Mood Tracking</h1>
-          <p className="text-gray-600 mt-1">Track, analyze, and understand your emotional well-being</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-[var(--radius)] bg-accent-subtle text-accent">
+              <Heart className="w-5 h-5" />
+            </div>
+            <h1 className="text-h1">Mood Tracking</h1>
+          </div>
+          <p className="text-body max-w-2xl">
+            Track, analyze, and understand your emotional well-being. Log your mood daily 
+            to discover patterns and improve your mental health.
+          </p>
         </div>
-        <button
-          onClick={() => setIsQuickLogOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
+        <Button onClick={() => setIsQuickLogOpen(true)}>
+          <Plus className="w-4 h-4 mr-1.5" />
           Log Mood
-        </button>
+        </Button>
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Activity className="w-5 h-5 text-blue-600" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card isHoverable>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-[var(--radius)] bg-accent-subtle text-accent">
+                <Activity className="w-5 h-5" />
+              </div>
+              <span className="text-body-sm text-fg-muted">Current Streak</span>
             </div>
-            <span className="text-sm text-gray-600">Current Streak</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats?.current_streak || 0} <span className="text-lg font-normal text-gray-500">days</span></p>
-          <p className="text-sm text-gray-500 mt-1">Best: {stats?.best_streak || 0} days</p>
-        </div>
+            <p className="text-metric">{stats?.current_streak || 0} <span className="text-body font-normal text-fg-muted">days</span></p>
+            <p className="text-caption mt-1">Best: {stats?.best_streak || 0} days</p>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Smile className="w-5 h-5 text-green-600" />
+        <Card isHoverable>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-[var(--radius)] bg-success-subtle text-success">
+                <Smile className="w-5 h-5" />
+              </div>
+              <span className="text-body-sm text-fg-muted">7-Day Average</span>
             </div>
-            <span className="text-sm text-gray-600">7-Day Average</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats?.avg_mood_7d?.toFixed(1) || '-'}</p>
-          <p className="text-sm text-gray-500 mt-1">30-day: {stats?.avg_mood_30d?.toFixed(1) || '-'}</p>
-        </div>
+            <p className="text-metric">{stats?.avg_mood_7d?.toFixed(1) || '-'}</p>
+            <p className="text-caption mt-1">30-day: {stats?.avg_mood_30d?.toFixed(1) || '-'}</p>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Target className="w-5 h-5 text-purple-600" />
+        <Card isHoverable>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-[var(--radius)] bg-warning-subtle text-warning">
+                <Target className="w-5 h-5" />
+              </div>
+              <span className="text-body-sm text-fg-muted">Total Entries</span>
             </div>
-            <span className="text-sm text-gray-600">Total Entries</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{stats?.total_entries || 0}</p>
-          <p className="text-sm text-gray-500 mt-1">This period: {entries.length}</p>
-        </div>
+            <p className="text-metric">{stats?.total_entries || 0}</p>
+            <p className="text-caption mt-1">This period: {entries.length}</p>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <Zap className="w-5 h-5 text-yellow-600" />
+        <Card isHoverable>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-[var(--radius)] bg-success-subtle text-success">
+                <Zap className="w-5 h-5" />
+              </div>
+              <span className="text-body-sm text-fg-muted">Top Emotion</span>
             </div>
-            <span className="text-sm text-gray-600">Top Emotion</span>
-          </div>
-          <p className="text-3xl font-bold text-gray-900 capitalize">{stats?.top_emotions?.[0]?.emotion || '-'}</p>
-          <p className="text-sm text-gray-500 mt-1">{stats?.top_emotions?.[0]?.count || 0} times</p>
-        </div>
+            <p className="text-metric capitalize">{stats?.top_emotions?.[0]?.emotion || '-'}</p>
+            <p className="text-caption mt-1">{stats?.top_emotions?.[0]?.count || 0} times</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200">
-        {[
-          { id: 'overview', label: 'Overview', icon: BarChart3 },
-          { id: 'timeline', label: 'Timeline', icon: TrendingUp },
-          { id: 'patterns', label: 'Patterns', icon: Target },
-          { id: 'emotions', label: 'Emotions', icon: Smile },
-          { id: 'insights', label: 'Insights', icon: Lightbulb },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="border-b border-border">
+        <nav className="flex gap-1" aria-label="Tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                'flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-fast',
+                activeTab === tab.id
+                  ? 'border-foreground text-foreground'
+                  : 'border-transparent text-fg-muted hover:text-foreground hover:border-border'
+              )}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
       {/* Time Period Selector */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2">
         {TIME_PERIODS.map((period) => (
           <button
             key={period.value}
             onClick={() => setSelectedPeriod(period.value)}
-            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+            className={cn(
+              'px-3 py-1.5 text-sm rounded-[var(--radius-sm)] transition-fast',
               selectedPeriod === period.value
-                ? 'bg-blue-100 text-blue-700 font-medium'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+                ? 'bg-foreground text-background font-medium'
+                : 'bg-bg-subtle text-fg-muted hover:text-foreground hover:bg-bg-hover'
+            )}
           >
             {period.label}
           </button>
@@ -275,505 +299,306 @@ export default function Mood() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Mood Timeline Chart */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Mood Timeline</h3>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timelineData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis
-                    dataKey="date"
-                    tickFormatter={(date) => format(new Date(date), 'MMM d')}
-                    stroke="#6B7280"
-                  />
-                  <YAxis domain={[0, 10]} stroke="#6B7280" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB' }}
-                    formatter={(value: number) => [value.toFixed(1), 'Mood']}
-                    labelFormatter={(date) => format(new Date(date), 'MMM d, yyyy')}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="mood_value"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dot={{ fill: '#3B82F6', strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
-                  />
-                  {timelineData.some(d => d.rolling_avg_7d) && (
-                    <Line
-                      type="monotone"
-                      dataKey="rolling_avg_7d"
-                      stroke="#10B981"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      dot={false}
-                    />
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex gap-6 mt-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                <span className="text-gray-600">Daily Mood</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="text-gray-600">7-Day Average</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Mood Distribution */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Mood Distribution</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={Object.entries(stats?.mood_distribution || {}).map(([value, count]) => ({
-                      value: Number(value),
-                      count,
-                      label: `${value} ${getMoodEmoji(Number(value))}`,
-                    }))}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="value" stroke="#6B7280" />
-                    <YAxis stroke="#6B7280" />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB' }}
-                      formatter={(value: number) => [value, 'Entries']}
-                    />
-                    <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Time of Day Averages */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Mood by Time of Day</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart
-                    data={Object.entries(stats?.time_of_day_averages || {}).map(([time, avg]) => ({
-                      time: time.charAt(0).toUpperCase() + time.slice(1),
-                      avg: Number(avg.toFixed(1)),
-                      fullMark: 10,
-                    }))}
-                  >
-                    <PolarGrid stroke="#E5E7EB" />
-                    <PolarAngleAxis dataKey="time" tick={{ fill: '#6B7280', fontSize: 12 }} />
-                    <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fill: '#6B7280', fontSize: 10 }} />
-                    <Radar
-                      name="Average Mood"
-                      dataKey="avg"
-                      stroke="#8B5CF6"
-                      fill="#8B5CF6"
-                      fillOpacity={0.3}
-                      strokeWidth={2}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'timeline' && (
-        <div className="space-y-6">
-          {/* Calendar Heatmap */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Mood Calendar</h3>
-            <div className="grid grid-cols-7 gap-1">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className="text-center text-xs text-gray-500 py-2">
-                  {day}
+      <div className="animate-fade-in">
+        {activeTab === 'overview' && (
+          <div className="space-y-6">
+            {/* Mood Timeline Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Mood Timeline</CardTitle>
+                <CardDescription>Your mood changes over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={timelineData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(date) => format(new Date(date), 'MMM d')}
+                        stroke="hsl(var(--fg-muted))"
+                        fontSize={12}
+                      />
+                      <YAxis domain={[0, 10]} stroke="hsl(var(--fg-muted))" fontSize={12} />
+                      <Tooltip
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--bg-elevated))', 
+                          borderRadius: 'var(--radius)', 
+                          border: '1px solid hsl(var(--border))',
+                          color: 'hsl(var(--fg))'
+                        }}
+                        formatter={(value) => [typeof value === 'number' ? value.toFixed(1) : value, 'Mood']}
+                        labelFormatter={(date) => format(new Date(date), 'MMM d, yyyy')}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="mood_value"
+                        stroke="hsl(var(--accent))"
+                        strokeWidth={2}
+                        dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                      {timelineData.some(d => d.rolling_avg_7d) && (
+                        <Line
+                          type="monotone"
+                          dataKey="rolling_avg_7d"
+                          stroke="hsl(var(--success))"
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          dot={false}
+                        />
+                      )}
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-              {heatmapData.slice(-42).map((day, index) => (
-                <div
-                  key={index}
-                  className="aspect-square rounded-lg flex items-center justify-center text-xs font-medium"
-                  style={{ backgroundColor: day.color || '#F3F4F6' }}
-                  title={`${format(new Date(day.date), 'MMM d')}: ${day.mood_value?.toFixed(1) || 'No data'}`}
-                >
-                  {day.mood_value ? day.mood_value.toFixed(0) : ''}
+                <div className="flex gap-6 mt-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-accent"></div>
+                    <span className="text-fg-muted">Daily Mood</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-success"></div>
+                    <span className="text-fg-muted">7-Day Average</span>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-4 mt-4 text-sm">
-              <span className="text-gray-500">Low</span>
-              <div className="flex gap-1">
-                {['#EF4444', '#F97316', '#FBBF24', '#34D399', '#10B981'].map((color) => (
-                  <div key={color} className="w-4 h-4 rounded" style={{ backgroundColor: color }}></div>
-                ))}
-              </div>
-              <span className="text-gray-500">High</span>
+              </CardContent>
+            </Card>
+
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Mood Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mood Distribution</CardTitle>
+                  <CardDescription>How often you feel each mood level</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={Object.entries(stats?.mood_distribution || {}).map(([value, count]) => ({
+                          value: Number(value),
+                          count,
+                          label: `${value} ${getMoodEmoji(Number(value))}`,
+                        }))}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="value" stroke="hsl(var(--fg-muted))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--fg-muted))" fontSize={12} />
+                        <Tooltip
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--bg-elevated))', 
+                            borderRadius: 'var(--radius)', 
+                            border: '1px solid hsl(var(--border))',
+                            color: 'hsl(var(--fg))'
+                          }}
+                          formatter={(value) => [value, 'Entries']}
+                        />
+                        <Bar dataKey="count" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Time of Day Averages */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mood by Time of Day</CardTitle>
+                  <CardDescription>When you feel your best</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart
+                        data={Object.entries(stats?.time_of_day_averages || {}).map(([time, avg]) => ({
+                          time: time.charAt(0).toUpperCase() + time.slice(1),
+                          avg: Number(avg.toFixed(1)),
+                          fullMark: 10,
+                        }))}
+                      >
+                        <PolarGrid stroke="hsl(var(--border))" />
+                        <PolarAngleAxis dataKey="time" tick={{ fill: 'hsl(var(--fg-muted))', fontSize: 12 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fill: 'hsl(var(--fg-muted))', fontSize: 10 }} />
+                        <Radar
+                          name="Average Mood"
+                          dataKey="avg"
+                          stroke="hsl(var(--accent))"
+                          fill="hsl(var(--accent))"
+                          fillOpacity={0.3}
+                          strokeWidth={2}
+                        />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </div>
+        )}
 
-          {/* Recent Entries */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Entries</h3>
-            <div className="space-y-3">
-              {entries.slice(0, 10).map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
-                >
+        {activeTab === 'insights' && (
+          <div className="space-y-6">
+            {/* Active Insights */}
+            <div className="space-y-4">
+              {insights.length === 0 ? (
+                <EmptyState
+                  icon={<Lightbulb className="w-12 h-12" strokeWidth={1} />}
+                  title="No insights yet"
+                  description="Keep logging your mood to receive personalized insights."
+                />
+              ) : (
+                insights.map((insight) => (
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-                    style={{ backgroundColor: getMoodColor(entry.mood_value) + '20' }}
+                    key={insight.id}
+                    className={cn(
+                      'rounded-[var(--radius)] p-6 border-2',
+                      getInsightBg(insight.insight_type)
+                    )}
                   >
-                    {getMoodEmoji(entry.mood_value)}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">
-                        Mood {entry.mood_value}/10
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {entry.time_of_day_display}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {format(new Date(entry.entry_date), 'MMM d, yyyy')} at {entry.entry_time}
-                    </p>
-                    {entry.notes && (
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-1">{entry.notes}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    {entry.factors_count > 0 && (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                        {entry.factors_count} factors
-                      </span>
-                    )}
-                    {entry.emotions_count > 0 && (
-                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                        {entry.emotions_count} emotions
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'patterns' && (
-        <div className="space-y-6">
-          {patterns.map((pattern, index) => (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Target className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 capitalize">
-                    {pattern.pattern_type.replace('_', ' ')} Pattern
-                  </h3>
-                  <p className="text-gray-600 mt-2">{pattern.insight}</p>
-                  
-                  {pattern.pattern_data.by_day && (
-                    <div className="mt-4">
-                      <div className="h-48">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart
-                            data={Object.entries(pattern.pattern_data.by_day).map(([day, avg]) => ({
-                              day,
-                              avg: Number(avg),
-                            }))}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                            <XAxis dataKey="day" stroke="#6B7280" fontSize={12} />
-                            <YAxis domain={[0, 10]} stroke="#6B7280" />
-                            <Tooltip
-                              contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB' }}
-                              formatter={(value: number) => [value.toFixed(1), 'Average Mood']}
-                            />
-                            <Bar dataKey="avg" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Day of Week Analysis */}
-          {stats?.day_of_week_averages && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Day of Week Analysis</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={Object.entries(stats.day_of_week_averages).map(([day, avg]) => ({
-                      day: day.slice(0, 3),
-                      avg: Number(avg.toFixed(1)),
-                    }))}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="day" stroke="#6B7280" />
-                    <YAxis domain={[0, 10]} stroke="#6B7280" />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB' }}
-                      formatter={(value: number) => [value.toFixed(1), 'Average Mood']}
-                    />
-                    <Bar dataKey="avg" fill="#10B981" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'emotions' && (
-        <div className="space-y-6">
-          {/* Emotion Wheel */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Emotion Wheel</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {emotionWheel.map((emotion) => (
-                <div
-                  key={emotion.primary_emotion}
-                  className="p-4 rounded-xl border-2 border-transparent hover:border-gray-200 transition-colors"
-                  style={{ backgroundColor: emotion.color + '20' }}
-                >
-                  <h4 className="font-semibold text-gray-900">{emotion.label}</h4>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {emotion.related_emotions.slice(0, 3).map((related) => (
-                      <span
-                        key={related}
-                        className="text-xs px-2 py-1 rounded-full"
-                        style={{ backgroundColor: emotion.color + '40' }}
-                      >
-                        {related}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Top Emotions */}
-          {stats?.top_emotions && stats.top_emotions.length > 0 && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Top Emotions</h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats.top_emotions}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="count"
-                      nameKey="emotion"
-                    >
-                      {stats.top_emotions.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E5E7EB' }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'insights' && (
-        <div className="space-y-6">
-          {/* Active Insights */}
-          <div className="space-y-4">
-            {insights.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-xl">
-                <Lightbulb className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No insights yet</h3>
-                <p className="text-gray-500">Keep logging your mood to receive personalized insights.</p>
-              </div>
-            ) : (
-              insights.map((insight) => (
-                <div
-                  key={insight.id}
-                  className={`bg-white rounded-xl p-6 shadow-sm border-2 ${
-                    insight.insight_type === 'warning'
-                      ? 'border-red-200 bg-red-50'
-                      : insight.insight_type === 'achievement'
-                      ? 'border-green-200 bg-green-50'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`p-3 rounded-lg ${
-                          insight.insight_type === 'warning'
-                            ? 'bg-red-100'
-                            : insight.insight_type === 'achievement'
-                            ? 'bg-green-100'
-                            : insight.insight_type === 'pattern'
-                            ? 'bg-blue-100'
-                            : 'bg-yellow-100'
-                        }`}
-                      >
-                        {insight.insight_type === 'warning' ? (
-                          <TrendingDown className="w-6 h-6 text-red-600" />
-                        ) : insight.insight_type === 'achievement' ? (
-                          <TrendingUp className="w-6 h-6 text-green-600" />
-                        ) : insight.insight_type === 'pattern' ? (
-                          <Target className="w-6 h-6 text-blue-600" />
-                        ) : (
-                          <Lightbulb className="w-6 h-6 text-yellow-600" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{insight.title}</h3>
-                        <p className="text-gray-600 mt-1">{insight.description}</p>
-                        
-                        {insight.action_items && insight.action_items.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-sm font-medium text-gray-700">Suggested Actions:</p>
-                            <ul className="mt-1 space-y-1">
-                              {insight.action_items.map((action, idx) => (
-                                <li key={idx} className="text-sm text-gray-600 flex items-center gap-2">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                                  {action}
-                                </li>
-                              ))}
-                            </ul>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 rounded-[var(--radius)] bg-bg-elevated">
+                          {getInsightIcon(insight.insight_type)}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-h4">{insight.title}</h3>
+                          <p className="text-body mt-1">{insight.description}</p>
+                          
+                          {insight.action_items && insight.action_items.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-body-sm font-medium text-foreground">Suggested Actions:</p>
+                              <ul className="mt-1 space-y-1">
+                                {insight.action_items.map((action, idx) => (
+                                  <li key={idx} className="text-body-sm text-fg-muted flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-accent"></div>
+                                    {action}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-4 mt-3 text-caption text-fg-muted">
+                            <span>Confidence: {Math.round(insight.confidence * 100)}%</span>
+                            <span>{format(new Date(insight.created_at), 'MMM d, yyyy')}</span>
                           </div>
-                        )}
-                        
-                        <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                          <span>Confidence: {Math.round(insight.confidence * 100)}%</span>
-                          <span>{format(new Date(insight.created_at), 'MMM d, yyyy')}</span>
                         </div>
                       </div>
+                      <button
+                        onClick={() => dismissInsight(insight.id)}
+                        className="text-fg-subtle hover:text-foreground p-1"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => dismissInsight(insight.id)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
+
+            {/* Factors Impact */}
+            {(stats?.top_positive_factors?.length || stats?.top_negative_factors?.length) ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Positive Factors</CardTitle>
+                    <CardDescription>What improves your mood</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {stats?.top_positive_factors?.map((factor, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-success-subtle rounded-[var(--radius-sm)]">
+                          <span className="font-medium text-foreground capitalize">{factor.category}</span>
+                          <span className="text-success font-semibold">+{factor.impact}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Negative Factors</CardTitle>
+                    <CardDescription>What brings your mood down</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {stats?.top_negative_factors?.map((factor, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-destructive-subtle rounded-[var(--radius-sm)]">
+                          <span className="font-medium text-foreground capitalize">{factor.category}</span>
+                          <span className="text-destructive font-semibold">{factor.impact}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : null}
           </div>
+        )}
 
-          {/* Factors Impact */}
-          {(stats?.top_positive_factors?.length > 0 || stats?.top_negative_factors?.length > 0) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Positive Factors</h3>
-                <div className="space-y-3">
-                  {stats.top_positive_factors.map((factor, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <span className="font-medium text-gray-900 capitalize">{factor.category}</span>
-                      <span className="text-green-600 font-semibold">+{factor.impact}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* Other tabs content would go here */}
+        {(activeTab === 'timeline' || activeTab === 'patterns' || activeTab === 'emotions') && (
+          <EmptyState
+            icon={<BarChart3 className="w-12 h-12" strokeWidth={1} />}
+            title="Coming Soon"
+            description="This feature is under development. Check back later!"
+          />
+        )}
+      </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Negative Factors</h3>
-                <div className="space-y-3">
-                  {stats.top_negative_factors.map((factor, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <span className="font-medium text-gray-900 capitalize">{factor.category}</span>
-                      <span className="text-red-600 font-semibold">{factor.impact}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Quick Log Modal */}
-      {isQuickLogOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">How are you feeling?</h2>
-              <button
-                onClick={() => setIsQuickLogOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="text-center mb-6">
+      {/* Quick Log Modal - Using Proper Dialog Component */}
+      <Dialog open={isQuickLogOpen} onOpenChange={setIsQuickLogOpen}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>How are you feeling?</DialogTitle>
+          </DialogHeader>
+          
+          <DialogBody className="space-y-6">
+            {/* Mood Display */}
+            <div className="text-center">
               <div className="text-6xl mb-2">{getMoodEmoji(quickLogMood)}</div>
-              <div className="text-3xl font-bold text-gray-900">{quickLogMood}/10</div>
+              <div className="text-metric">{quickLogMood}<span className="text-body font-normal text-fg-muted">/10</span></div>
               <input
                 type="range"
                 min="1"
                 max="10"
                 value={quickLogMood}
                 onChange={(e) => setQuickLogMood(Number(e.target.value))}
-                className="w-full mt-4 accent-blue-600"
+                className="w-full mt-4 accent-accent"
               />
-              <div className="flex justify-between text-sm text-gray-500 mt-2">
+              <div className="flex justify-between text-caption text-fg-muted mt-2">
                 <span>Terrible</span>
                 <span>Excellent</span>
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Notes (optional)
               </label>
               <textarea
                 value={quickLogNotes}
                 onChange={(e) => setQuickLogNotes(e.target.value)}
                 placeholder="What's on your mind?"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border bg-background rounded-[var(--radius-sm)] text-sm text-foreground placeholder:text-fg-subtle focus:outline-none focus:border-border-hover focus:ring-2 focus:ring-ring/20 resize-none"
                 rows={3}
               />
             </div>
+          </DialogBody>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsQuickLogOpen(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleQuickLog}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Log Mood
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setIsQuickLogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleQuickLog}>
+              Log Mood
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -8,8 +8,10 @@ import { TemplateSelector } from '../components/notes/TemplateSelector';
 import { NoteAnalytics } from '../components/notes/NoteAnalytics';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { Plus, Search, LayoutGrid, Network, BarChart3, Archive, Star, Clock, Filter, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog';
+import { Plus, Search, LayoutGrid, Network, BarChart3, Filter, X, FileText } from 'lucide-react';
 import { notesApi } from '../api';
+import { cn } from '../lib/utils';
 import type { NoteFolder, NoteTag, NoteGraphData } from '../types/notes';
 
 type ViewMode = 'list' | 'graph' | 'analytics';
@@ -73,14 +75,12 @@ export function Notes() {
       try {
         const response = await notesApi.useTemplate(templateId);
         if (response.data.note_id) {
-          // Navigate to the new note
           window.location.href = `/notes/${response.data.note_id}`;
         }
       } catch (error) {
         console.error('Failed to use template', error);
       }
     } else {
-      // Blank note
       setShowEditor(true);
     }
   };
@@ -95,6 +95,8 @@ export function Notes() {
     return params;
   };
 
+  const hasActiveFilters = filterType !== 'all' || selectedTag || dateFrom || dateTo;
+
   return (
     <div className="flex h-[calc(100vh-var(--header-height))]">
       <FolderSidebar
@@ -106,53 +108,67 @@ export function Notes() {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="p-4 md:p-6 border-b border-border bg-bg-elevated">
+        <div className="p-5 border-b border-border bg-bg-elevated">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-h1">Notes</h1>
-              <p className="text-body text-fg-subtle mt-1">
+              <div className="flex items-center gap-3 mb-1">
+                <div className="p-2 rounded-[var(--radius)] bg-warning-subtle text-warning">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <h1 className="text-h1">Notes</h1>
+              </div>
+              <p className="text-body-sm text-fg-subtle">
                 Organize your thoughts with bidirectional linking and knowledge graphs.
               </p>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
               {/* View Mode Toggle */}
-              <div className="flex bg-bg-subtle rounded-lg p-1">
+              <div className="flex bg-bg-subtle rounded-[var(--radius-sm)] p-1">
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    viewMode === 'list' ? 'bg-bg-elevated shadow-sm' : 'text-fg-subtle hover:text-foreground'
-                  }`}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] text-sm transition-fast',
+                    viewMode === 'list' 
+                      ? 'bg-bg-elevated shadow-sm text-foreground' 
+                      : 'text-fg-muted hover:text-foreground'
+                  )}
                 >
-                  <LayoutGrid className="size-4" strokeWidth={1.5} />
+                  <LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
                   <span className="hidden sm:inline">List</span>
                 </button>
                 <button
                   onClick={() => setViewMode('graph')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    viewMode === 'graph' ? 'bg-bg-elevated shadow-sm' : 'text-fg-subtle hover:text-foreground'
-                  }`}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] text-sm transition-fast',
+                    viewMode === 'graph' 
+                      ? 'bg-bg-elevated shadow-sm text-foreground' 
+                      : 'text-fg-muted hover:text-foreground'
+                  )}
                 >
-                  <Network className="size-4" strokeWidth={1.5} />
+                  <Network className="w-4 h-4" strokeWidth={1.5} />
                   <span className="hidden sm:inline">Graph</span>
                 </button>
                 <button
                   onClick={() => setViewMode('analytics')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    viewMode === 'analytics' ? 'bg-bg-elevated shadow-sm' : 'text-fg-subtle hover:text-foreground'
-                  }`}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-[var(--radius-sm)] text-sm transition-fast',
+                    viewMode === 'analytics' 
+                      ? 'bg-bg-elevated shadow-sm text-foreground' 
+                      : 'text-fg-muted hover:text-foreground'
+                  )}
                 >
-                  <BarChart3 className="size-4" strokeWidth={1.5} />
+                  <BarChart3 className="w-4 h-4" strokeWidth={1.5} />
                   <span className="hidden sm:inline">Analytics</span>
                 </button>
               </div>
 
-              <div className="w-px h-8 bg-border mx-1" />
+              <div className="w-px h-8 bg-border mx-1 hidden sm:block" />
 
               {viewMode === 'list' && (
                 <>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-fg-subtle" strokeWidth={1.5} />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fg-subtle" strokeWidth={1.5} />
                     <Input
                       type="text"
                       value={searchQuery}
@@ -167,13 +183,13 @@ export function Notes() {
                     variant={showFilters ? 'primary' : 'secondary'}
                     size="sm"
                   >
-                    <Filter className="size-4" strokeWidth={1.5} />
+                    <Filter className="w-4 h-4" strokeWidth={1.5} />
                   </Button>
                 </>
               )}
 
               <Button onClick={() => setShowTemplateSelector(true)} size="sm">
-                <Plus className="size-4 mr-1.5" strokeWidth={1.5} />
+                <Plus className="w-4 h-4 mr-1.5" strokeWidth={1.5} />
                 New Note
               </Button>
             </div>
@@ -182,12 +198,12 @@ export function Notes() {
           {/* Filter Bar */}
           {showFilters && viewMode === 'list' && (
             <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-3">
-              <span className="text-sm text-fg-subtle">Filters:</span>
+              <span className="text-body-sm text-fg-subtle">Filters:</span>
               
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as FilterType)}
-                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-lg text-sm"
+                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-[var(--radius-sm)] text-sm text-foreground"
               >
                 <option value="all">All Notes</option>
                 <option value="favorites">⭐ Favorites</option>
@@ -198,7 +214,7 @@ export function Notes() {
               <select
                 value={selectedTag}
                 onChange={(e) => setSelectedTag(e.target.value)}
-                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-lg text-sm"
+                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-[var(--radius-sm)] text-sm text-foreground"
               >
                 <option value="">All Tags</option>
                 {tags.map(tag => (
@@ -210,19 +226,19 @@ export function Notes() {
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-lg text-sm"
+                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-[var(--radius-sm)] text-sm text-foreground"
                 placeholder="From"
               />
-              <span className="text-fg-subtle">to</span>
+              <span className="text-fg-subtle text-sm">to</span>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-lg text-sm"
+                className="px-3 py-1.5 bg-bg-subtle border border-border rounded-[var(--radius-sm)] text-sm text-foreground"
                 placeholder="To"
               />
 
-              {(filterType !== 'all' || selectedTag || dateFrom || dateTo) && (
+              {hasActiveFilters && (
                 <button
                   onClick={() => {
                     setFilterType('all');
@@ -230,9 +246,9 @@ export function Notes() {
                     setDateFrom('');
                     setDateTo('');
                   }}
-                  className="flex items-center gap-1 text-sm text-fg-subtle hover:text-foreground"
+                  className="flex items-center gap-1 text-sm text-fg-muted hover:text-foreground transition-fast"
                 >
-                  <X className="size-3.5" strokeWidth={1.5} />
+                  <X className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Clear
                 </button>
               )}
@@ -241,11 +257,11 @@ export function Notes() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
+        <div className="flex-1 overflow-auto p-5">
           {viewMode === 'list' && (
             <>
               {showEditor && (
-                <div className="mb-6">
+                <div className="mb-6 animate-slide-in-bottom">
                   <NoteEditor
                     folderId={selectedFolder || undefined}
                     onSave={() => {
@@ -269,7 +285,7 @@ export function Notes() {
           )}
 
           {viewMode === 'graph' && (
-            <div className="h-[calc(100vh-200px)] min-h-[500px]">
+            <div className="h-[calc(100vh-180px)] min-h-[400px]">
               <KnowledgeGraph
                 data={graphData}
                 onNodeClick={(noteId) => {
@@ -295,12 +311,17 @@ export function Notes() {
       />
 
       {/* Template Selector Modal */}
-      {showTemplateSelector && (
-        <TemplateSelector
-          onSelect={handleSelectTemplate}
-          onClose={() => setShowTemplateSelector(false)}
-        />
-      )}
+      <Dialog open={showTemplateSelector} onOpenChange={setShowTemplateSelector}>
+        <DialogContent size="lg">
+          <DialogHeader>
+            <DialogTitle>Choose a Template</DialogTitle>
+          </DialogHeader>
+          <TemplateSelector
+            onSelect={handleSelectTemplate}
+            onClose={() => setShowTemplateSelector(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
