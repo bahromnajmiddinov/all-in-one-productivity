@@ -82,7 +82,7 @@ export function Layout() {
     <div className="min-h-screen bg-background flex">
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
@@ -91,7 +91,7 @@ export function Layout() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 h-screen border-r border-border bg-bg-elevated transition-all duration-fast flex flex-col',
+          'fixed left-0 top-0 z-50 h-screen border-r border-border bg-bg-elevated transition-all duration-fast flex flex-col lg:relative lg:z-0',
           sidebarWidth,
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
@@ -173,9 +173,8 @@ export function Layout() {
       {/* Main Content Area */}
       <div
         className={cn(
-          'flex-1 flex flex-col min-w-0 transition-all duration-fast',
-          'lg:pl-sidebar',
-          sidebarCollapsed && 'lg:pl-sidebar-collapsed'
+          'flex-1 flex flex-col min-w-0 overflow-hidden',
+          'pl-0'
         )}
       >
         {/* Header */}
